@@ -1,0 +1,33 @@
+{
+ "tag": "heltec-v4",
+ "parts": [
+  "heltec-mesh-node-t114",
+  "heltec-wifi-lora-32-v4"
+ ],
+ "notes": [
+  {
+   "handle": "sargbench1",
+   "id": "a-bench-spec-that-retunes-a-live-mesh",
+   "title": "A bench spec that retunes a live mesh node and restores it only at the end strands that node if the run is interrupted",
+   "status": "provisional"
+  },
+  {
+   "handle": "sargbench1",
+   "id": "meshcore-bw62-5-sf7-holds-a-bench-distance",
+   "title": "MeshCore BW62.5/SF7 holds a bench-distance link with >=22 dB of margin, more than TX reduction alone can exhaust",
+   "status": "provisional"
+  },
+  {
+   "handle": "sargbench1",
+   "id": "silent-relay-failure-is-invisible-to-the-link",
+   "title": "Silent relay failure is invisible to the link layer; detection requires application watchdog",
+   "status": "provisional"
+  },
+  {
+   "handle": "sargbench1",
+   "id": "relay-failure-detection-latency-16-5-107-ms",
+   "title": "Relay failure detection latency: 16.5\u2013107 ms floor, 4.1\u00d7 slower than AP disconnection",
+   "status": "provisional"
+  }
+ ]
+}

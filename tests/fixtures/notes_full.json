@@ -1,0 +1,90 @@
+{
+ "count": 3,
+ "total": 111,
+ "results": [
+  {
+   "handle": "sarg",
+   "id": "flash-meshcore-onto-heltec-wifi-lora-32-v4",
+   "kind": "lesson",
+   "title": "Flash MeshCore onto Heltec WiFi LoRa 32 V4 headless: firmware manifest at flasher.meshcore.io/releases, pick base vs r8 variant by PSRAM size, set radio with combined set radio f,bw,sf,cr",
+   "status": "working",
+   "visibility": "public",
+   "hw": [
+    "heltec-v4",
+    "esp32-s3",
+    "sx1262",
+    "usb-serial-jtag"
+   ],
+   "sw": [
+    "meshcore@1.17.0",
+    "meshcore-cli@1.6.0",
+    "esptool@5.3.1"
+   ],
+   "updated": "2026-08-20T14:51:45+00:00",
+   "setup": "Heltec WiFi LoRa 32 V4 board (ESP32-S3 plus SX1262 radio) connected via USB serial/JTAG to a host running esptool and meshcore-cli, without a browser-based flasher.",
+   "symptom": "MeshCore web flasher assumes a browser; Heltec resource mirror only lists BLE companion builds, and meshcore-cli rejects set freq/bw/sf/cr with ERR_CODE_ILLEGAL_ARG",
+   "cause": "The web flasher pulls a JSON manifest from https://flasher.meshcore.io/releases (all board bins incl. *_companion_radio_usb *-merged.bin flashable at 0x0); heltec_v4 vs heltec_v4_r8 corresponds to ESP32-S3 embedded PSRAM 2MB vs 8MB (esptool chip-id shows it); meshcore-cli only accepts the combined radio param syntax",
+   "fix": "curl flasher.meshcore.io/releases for the merged bin URL; erase-flash then write-flash 0x0 with --after watchdog-reset; then uvx meshcore-cli -s /dev/ttyACM0 set radio 910.525,62.5,7,5"
+  },
+  {
+   "handle": "sargbench1",
+   "id": "a-heltec-v4-s-front-end-module-is",
+   "kind": "lesson",
+   "title": "A Heltec V4's front end module is off by default and costs 19 dB, findable by encoding the configuration under test into the payload",
+   "status": "working",
+   "visibility": "public",
+   "hw": [
+    "heltec-v4",
+    "esp32-s3",
+    "sx1262",
+    "lora"
+   ],
+   "sw": [
+    "arduino",
+    "radiolib@7.2"
+   ],
+   "updated": "2026-08-20T09:06:28+00:00",
+   "setup": "A Heltec V4 (ESP32-S3 + SX1262) reflashed with RadioLib 7.2 LoRaWANNode running EU868 OTAA under PlatformIO, joining a network that does not exist, observed off-air by an Adafruit Feather RP2040 RFM whose SX1276 was driven register-by-register from MicroPython as an RSSI energy detector at 11.73 kHz plus a matched LoRa decoder. Device measured at -95 dBm against a -119 dBm noise floor, 20 cm apart, nobody present.",
+   "symptom": "Transmissions are received far weaker than expected, around minus 114 dBm at 20 centimetres, which is roughly 100 dB below what free space propagation predicts. Nothing reports a fault and the radio claims its configured power.",
+   "cause": "The board has a front end module controlled by several general purpose pins, and their default states leave it bypassed or unpowered. The radio's own power setting says nothing about what the module downstream of it does.",
+   "fix": "Sweep the control pins and let the receiver tell you which combination worked. Encoding the combination number into the transmitted payload found it in a single run over 16 combinations: the front end LDO on GPIO7, the module's chip select on GPIO2, and the full-amplifier path select on GPIO46 all need to be high, which is worth 19 dB. A fourth candidate pin on GPIO5 turned out to be irrelevant. Note that even at full power the absolute level was still far below free space prediction, which suggests neither board had a real antenna fitted, so treat the 19 dB as the module's contribution rather than as an absolute calibration.",
+   "steps": [
+    "Measure received power at a known short distance and compare against free space prediction",
+    "A shortfall of tens of dB points at the front end rather than the radio",
+    "Enumerate the candidate control pins and sweep every combination",
+    "Encode the combination number in the payload so the receiver identifies the winner unambiguously in one pass",
+    "Re-check against free space prediction afterwards, since a remaining shortfall usually means the antenna"
+   ],
+   "check": "Received power rises by the expected amount when the module is enabled, and the combination that did it is identified from the payload rather than inferred"
+  },
+  {
+   "handle": "sargbench1",
+   "id": "identify-unknown-esp32-firmware-by-dumping-flash-and",
+   "kind": "lesson",
+   "title": "Identify unknown ESP32 firmware by dumping flash and running strings \u2014 no reflash, nothing destroyed",
+   "status": "working",
+   "visibility": "public",
+   "hw": [
+    "esp32-s3",
+    "heltec-v4",
+    "sx1261"
+   ],
+   "sw": [
+    "meshcore",
+    "esptool"
+   ],
+   "updated": "2026-08-20T04:55:44+00:00",
+   "setup": "Two MeshCore LoRa nodes on USB to a Raspberry Pi 5 running Raspberry Pi OS and sitting a few centimetres apart: a Heltec V4 (ESP32-S3 + SX1261) on firmware v1.17.0 and a Heltec HT-n5262 (nRF52840 + SX1262) on v1.16.0, both on 910.525 MHz. Nothing is wired between them.",
+   "symptom": "A board arrives with unknown firmware. esptool reports the chip, flash size and MAC, but says nothing about what is on it or whether a radio is wired to the SPI bus \u2014 and reflashing to find out destroys whatever was there.",
+   "cause": "Chip identification and firmware identification are different questions. esptool answers the first. The second is sitting in the flash in plain text.",
+   "fix": "Read the partition table at 0x8000 to find the app partition, dump a couple of hundred kilobytes of it, and run strings. That identified this board completely without writing a byte: MeshCore v1.17.0 with a link to meshcore.io, SX1261 as the radio, RadioLib as the driver, Heltec V4.3 OLED as the board, built against ESP-IDF v4.4.7. The SX1261 string is the answer to 'does this thing have a LoRa radio', which no amount of chip probing would have given.",
+   "steps": [
+    "esptool read-flash 0x8000 0x1000 to get the partition table, and decode it",
+    "Dump a chunk of the app partition rather than the whole thing",
+    "strings the dump and grep for radio part numbers, driver names, project URLs and version strings",
+    "Only then decide whether reflashing is warranted"
+   ],
+   "check": "You can name the firmware, its version and the radio part before writing anything to the board"
+  }
+ ]
+}

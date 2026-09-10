@@ -1,0 +1,31 @@
+{
+ "product": "heltec-wifi-lora-32-v4",
+ "handle": "sarg",
+ "fidelity": "envelope",
+ "verified": true,
+ "visibility": "public",
+ "files": [
+  {
+   "name": "amz-heltec-lora-v4.py",
+   "bytes": 529,
+   "role": "source"
+  },
+  {
+   "name": "amz-heltec-lora-v4.step",
+   "bytes": 31218,
+   "role": "cad"
+  },
+  {
+   "name": "part.yaml",
+   "bytes": 1863,
+   "role": "source"
+  }
+ ],
+ "download": [
+  "/m/sarg/heltec-wifi-lora-32-v4/f/amz-heltec-lora-v4.py",
+  "/m/sarg/heltec-wifi-lora-32-v4/f/amz-heltec-lora-v4.step",
+  "/m/sarg/heltec-wifi-lora-32-v4/f/part.yaml"
+ ],
+ "thumbnail": "/m/sarg/heltec-wifi-lora-32-v4/thumb.png",
+ "view_glb": "/m/sarg/heltec-wifi-lora-32-v4/view.glb"
+}

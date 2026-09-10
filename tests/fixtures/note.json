@@ -1,0 +1,44 @@
+{
+ "id": "heltec-v4-running-meshcore-companion-radio-usb-never",
+ "kind": "lesson",
+ "visibility": "public",
+ "title": "Heltec V4 running MeshCore companion_radio_usb never enumerates through an unpowered USB hub chain \u2014 dmesg 'device descriptor read/64, error -110' then 'device not accepting address, error -71' \u2014 use a rear motherboard port or a powered hub",
+ "setup": "Heltec WiFi LoRa 32 V4 (ESP32-S3, 2 MB PSRAM) on a Linux x86_64 workstation, connected through a two-deep USB 2.0 hub chain (kernel path 1-1.1.4). Flashed heltec_v4_companion_radio_usb-v1.17.0-727fc05-merged.bin at 0x0 with esptool; the flash itself wrote and verified fine over the same hub and cable.",
+ "symptom": "After the post-flash watchdog reset the 303a:1001 USB JTAG/serial device never returns. lsusb shows no Espressif device at all and RST does not help, while the OLED shows the MeshCore screen so the app is running. dmesg on every reset: 'new full-speed USB device number N using xhci_hcd', 'device descriptor read/64, error -110' twice, then 'attempt power cycle', 'Device not responding to setup address', 'device not accepting address N, error -71', 'unable to enumerate USB device'.",
+ "cause": "Not enough USB power: the hub chain (Genesys 05e3:0610 -> Terminus 1a40:0101) has a DC power input that was not connected, so it ran bus-powered on a 100 mA budget while still reporting self-powered to the kernel. The ROM bootloader is a light enough load to flash, but once the app turns on Vext, the OLED and the LoRa receiver the chip holds D+ up yet never answers setup, and the hub power-cycles the port.",
+ "fix": "Give the board a real 500 mA port: a rear motherboard USB port, or a hub with its power adapter actually plugged in. It then enumerates as 303a:1001 immediately and meshcore-cli connects.",
+ "steps": [
+  "Unplug the board from the unpowered hub and plug the same cable into a rear motherboard USB port, or into a hub that has its own power adapter",
+  "Wait 5 s, then: lsusb | grep 303a  -> expect 'ID 303a:1001 Espressif USB JTAG/serial debug unit'",
+  "ls /dev/serial/by-id/  -> usb-Espressif_USB_JTAG_serial_debug_unit_<MAC>-if00",
+  "uvx meshcore-cli -s /dev/serial/by-id/usb-Espressif_USB_JTAG_serial_debug_unit_<MAC>-if00 infos  -> prints firmware v1.17.0 and radio settings",
+  "uvx meshcore-cli -s <same path> set radio 910.525,62.5,7,5 set name <node-name>   (US preset; firmware boots on EU 869.618 MHz)",
+  "Point any service at the /dev/serial/by-id path, not /dev/ttyACM0"
+ ],
+ "check": "lsusb lists 303a:1001 within 5 s of plugging into the rear port or the powered hub, meshcore-cli infos returns the node's public key and firmware version instead of 'No response from meshcore node', and the device stays enumerated with the OLED on. No battery was attached.",
+ "hw": [
+  "heltec-wifi-lora-32-v4",
+  "esp32-s3"
+ ],
+ "sw": [
+  "meshcore-firmware@1.17.0-727fc05",
+  "esptool@5",
+  "meshcore-cli"
+ ],
+ "host": [
+  "linux",
+  "x86_64",
+  "ubuntu-24"
+ ],
+ "unverified": [
+  "No current measurement was taken; the power explanation rests on ROM mode (light load) working on the bad port, the running app not, and a powered hub fixing it",
+  "The powered hub was a different chip (Realtek 0bda:5411) one level shallower, so hub signal quality was not isolated on its own"
+ ],
+ "intent": "Flash MeshCore USB companion firmware onto a Heltec V4 and bring it up as a Linux serial base station",
+ "project": "mesh-basestation",
+ "date": "2026-09-02",
+ "status": "working",
+ "author": "sargbench2",
+ "body": "Not the ARDUINO_USB_MODE=0 bug from MeshCore issue #2734: PR #3006 merged 2026-07-21, the 2026-08-09 v1.17.0 build already uses the hardware USB-Serial/JTAG (no TinyUSB strings in the image), and the PID stays 303a:1001 once it works.\n",
+ "handle": "sargbench2"
+}

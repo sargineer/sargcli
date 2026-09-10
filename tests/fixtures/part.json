@@ -1,0 +1,1015 @@
+{
+ "digest": {
+  "bringup": {
+   "intro": "From a bare board to a verified MeshCore node over USB, no web flasher.",
+   "source": "sarg/flash-meshcore-onto-heltec-wifi-lora-32-v4",
+   "steps": [
+    {
+     "title": "Flash MeshCore headless",
+     "desc": "curl flasher.meshcore.io/releases for the merged bin URL, esptool erase-flash, then write-flash 0x0 with --after watchdog-reset; set the radio from the CLI with meshcore-cli set radio to match your mesh.",
+     "ref": "sarg/flash-meshcore-onto-heltec-wifi-lora-32-v4"
+    },
+    {
+     "title": "Turn on the front-end module",
+     "desc": "The V4 FEM is off by default and costs 19 dB: the front-end LDO hangs on GPIO7 with the module chip select on GPIO2. Found by sweeping control-pin combinations and encoding the combination number into the transmitted payload.",
+     "ref": "sargbench1/a-heltec-v4-s-front-end-module-is"
+    },
+    {
+     "title": "Enable telemetry on the node you will query",
+     "desc": "Remote telemetry is off by default and queries time out after 10 s until it is enabled \u2014 on the queried node, not the querying one. Environment and location reporting are configured separately from the base mode.",
+     "ref": "sargbench1/meshcore-remote-telemetry-is-off-by-default-queries"
+    },
+    {
+     "title": "Test on a private channel",
+     "desc": "Move both nodes to a private radio configuration for the duration and restore afterwards \u2014 benchmarking on the live mesh channel contaminates the baseline. Verify the restore independently rather than trusting the tool.",
+     "ref": "sargbench1/move-a-lora-soak-test-onto-a-private"
+    },
+    {
+     "title": "Prove the link end to end",
+     "desc": "Cause a physical change you control on the far node and watch the reported value follow it with the right shape and lag \u2014 a number that never moves is a cache, not a measurement.",
+     "ref": "sargbench1/prove-remote-telemetry-is-live-by-forcing-a"
+    }
+   ]
+  },
+  "clusters": [
+   {
+    "name": "Flash & identify firmware",
+    "lessons": [
+     {
+      "ref": "sarg/flash-meshcore-onto-heltec-wifi-lora-32-v4",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-tag-dispatching-reset-script-will-erase-the",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/identify-unknown-esp32-firmware-by-dumping-flash-and",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-heltec-v4-s-front-end-module-is",
+      "cites": 0
+     }
+    ]
+   },
+   {
+    "name": "Remote telemetry",
+    "lessons": [
+     {
+      "ref": "sarg/t114-meshcore-i2c-sensor-scans-wire1-not-primary-sda-scl",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/prove-remote-telemetry-is-live-by-forcing-a",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/meshcore-exposes-only-voltage-and-temperature-to-a",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-meshcore-telemetry-poll-costs-18-less-airtime",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/meshcore-remote-telemetry-is-off-by-default-queries",
+      "cites": 0
+     }
+    ]
+   },
+   {
+    "name": "Messaging & delivery semantics",
+    "lessons": [
+     {
+      "ref": "sargbench1/meshcore-silently-evicts-delivered-messages-after-about-16",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/meshcore-does-not-push-received-messages-to-a",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/meshcore-accepts-coding-rates-5-through-7-and",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/the-meshcore-transmit-airtime-counter-has-one-second",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-meshcore-send-call-returns-in-about-a",
+      "cites": 0
+     }
+    ]
+   },
+   {
+    "name": "Radio presets, range & airtime",
+    "lessons": [
+     {
+      "ref": "sargbench1/the-lora-speed-for-range-trade-quantified-23",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/lora-noise-floor-rises-3db-per-bandwidth-doubling",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/faster-lora-preset-and-message-batching-compound-superlinear",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/faster-lora-settings-buy-far-less-than-the",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-29-byte-sensor-payload-exceeds-the-us",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/measured-lora-airtime-tracks-the-standard-formula-within",
+      "cites": 0
+     }
+    ]
+   },
+   {
+    "name": "Field testing & deployment",
+    "lessons": [
+     {
+      "ref": "sargbench1/move-a-lora-soak-test-onto-a-private",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-meshcore-link-held-99-53-delivery-and",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/benchmarking-on-your-live-mesh-channel-contaminates-the",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-meshcore-repeater-hop-roughly-halves-goodput-and",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/batching-json-sensor-readings-4-per-message-gives",
+      "cites": 0
+     }
+    ]
+   },
+   {
+    "name": "LoRaWAN joins & duty cycle",
+    "lessons": [
+     {
+      "ref": "sargbench1/getting-lorawan-transmitting-from-nothing-took-about-20",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/radiolib-s-duty-cycle-governor-makes-join-retries",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-lorawan-join-at-sf12-burns-18-times",
+      "cites": 0
+     },
+     {
+      "ref": "sargbench1/a-lorawan-device-that-cannot-find-a-gateway",
+      "cites": 0
+     }
+    ]
+   }
+  ],
+  "product": "heltec-wifi-lora-32-v4",
+  "published": "2026-08-20T19:47:57+00:00",
+  "source_lessons": 29,
+  "drift": 22
+ },
+ "links": {
+  "fits": [],
+  "members": [],
+  "cases": [],
+  "assemblies": []
+ },
+ "prints": [],
+ "part": {
+  "id": "heltec-wifi-lora-32-v4",
+  "name": "Heltec WiFi LoRa 32 V4 (ESP32-S3, SX1262, OLED)",
+  "kind": "",
+  "method": "",
+  "vendor": "heltec",
+  "sku": "B0GCD9W6JZ",
+  "model": "WiFi LoRa 32 V4",
+  "buy": [
+   "https://www.amazon.com/dp/B0GCD9W6JZ"
+  ],
+  "url": "https://heltec.org/project/wifi-lora-32-v4/",
+  "category": "board",
+  "owned_qty": 0
+ },
+ "facts": {
+  "id": "heltec-wifi-lora-32-v4",
+  "name": "Heltec WiFi LoRa 32 V4 (ESP32-S3",
+  "aka": [
+   "WiFi LoRa 32 V4.3.1",
+   "Heltec V4",
+   "Heltec LoRa V4 GNSS"
+  ],
+  "vendor": "amazon",
+  "sku": "B0GCD9W6JZ",
+  "url": "https://heltec.org/project/wifi-lora-32-v4/",
+  "qty_owned": 2,
+  "category": "board",
+  "hw_tags": [
+   "sx1262"
+  ],
+  "frame": "origin plan bottom-left, Z=0 bottom of pin headers; USB-C on X=0 short edge",
+  "body": {
+   "size_mm": [
+    51.7,
+    25.4,
+    10.7
+   ],
+   "outline": "rounded-rect",
+   "notes": "brick envelope - 0.96in OLED on top face; u.FL antenna pigtail near X-max end needs routing room"
+  },
+  "mounting": {
+   "holes": [],
+   "notes": "NO mounting holes - pocket/clamp capture; leave OLED window + BOOT/RST button access on top face"
+  },
+  "electrical": {
+   "vin": "5V USB-C / 1S LiPo (SH1.25 2-pin) / solar 4.7-6V (1.25mm 2-pin)",
+   "logic_v": 3.3,
+   "protocols": [
+    "i2c",
+    "spi",
+    "uart",
+    "wifi",
+    "ble",
+    "lora-915"
+   ],
+   "connector": "SH1.25 2-pin battery + 1.25mm 2-pin solar + 1.25mm 8-pin GNSS interface (all NOT JST-PH 2.0)",
+   "notes": "High-power version: SX1262 28dBm (low-power version is 22dBm). Meshtastic-ready. GNSS is an INTERFACE only - no onboard receiver; external NMEA module plugs into the 1.25mm 8-pin, power switchable in firmware. Unit 2 (B0GCD9W6JZ) came with pre-soldered headers."
+  },
+  "cad": {
+   "file": "amz-heltec-lora-v4.step",
+   "fidelity": "envelope",
+   "source": "amz-heltec-lora-v4.py",
+   "verified": true
+  },
+  "sources": [
+   {
+    "facts": "51.7 x 25.4 x 10.7, pin-compatible with V3",
+    "ref": "heltec.org product page / OpenELAB review",
+    "date": "2026-07-23"
+   },
+   {
+    "facts": "SH1.25 battery, 1.25x2 solar 4.7-6V, 1.25x8 GNSS interface (no onboard GNSS), 28/22dBm versions, 35g",
+    "ref": "https://heltec.org/project/wifi-lora-32-v4/",
+    "date": "2026-08-08"
+   }
+  ],
+  "confidence": "overall envelope official; internal split (PCB z, OLED extent, USB-C center height) not modeled - caliper before tight faceplates"
+ },
+ "models": [
+  {
+   "handle": "sarg",
+   "fidelity": "envelope",
+   "verified": true,
+   "visibility": "public",
+   "url": "/m/sarg/heltec-wifi-lora-32-v4",
+   "files": [
+    "amz-heltec-lora-v4.py",
+    "amz-heltec-lora-v4.step",
+    "part.yaml"
+   ]
+  }
+ ],
+ "related": {
+  "notes": {
+   "exact": [
+    {
+     "handle": "sargbench2",
+     "id": "heltec-v4-running-meshcore-companion-radio-usb-never",
+     "title": "Heltec V4 running MeshCore companion_radio_usb never enumerates through an unpowered USB hub chain \u2014 dmesg 'device descriptor read/64, error -110' then 'device not accepting address, error -71' \u2014 use a rear motherboard port or a powered hub",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench2/heltec-v4-running-meshcore-companion-radio-usb-never"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "prove-a-web-flasher-manifest-by-flashing-exactly",
+     "title": "Prove a web-flasher manifest by flashing exactly what it names from the command line, because a wrong offset flashes cleanly and only fails at boot",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/prove-a-web-flasher-manifest-by-flashing-exactly"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshtastic-s-own-airtime-counter-is-trustworthy-to",
+     "title": "Meshtastic's own airtime counter is trustworthy to 0.5%, which is not something to assume \u2014 a mesh stack's counter can be wrong about rebroadcasts",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshtastic-s-own-airtime-counter-is-trustworthy-to"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "what-actually-paced-meshtastic-s-broadcasts-was-the",
+     "title": "What actually paced Meshtastic's broadcasts was the transmit queue being busy, not the airtime policy \u2014 39 busyTx to 3 utilisation refusals",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/what-actually-paced-meshtastic-s-broadcasts-was-the"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshtastic-s-channel-utilisation-governor-reported-18-3",
+     "title": "Meshtastic's channel-utilisation governor reported 18.3% while the band was measurably 42.9% busy, because its own estimate is a 60-second average",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshtastic-s-channel-utilisation-governor-reported-18-3"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshtastic-refuses-an-oversized-broadcast-loudly-and-drops",
+     "title": "Meshtastic refuses an oversized broadcast loudly and drops it whole \u2014 232 application bytes, and the port number costs one of them",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshtastic-refuses-an-oversized-broadcast-loudly-and-drops"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "the-first-payload-ceiling-you-find-over-usb",
+     "title": "The first payload ceiling you find over USB serial is your own write size, not the protocol's \u2014 chunking the write moved it from 227 to 232 bytes",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/the-first-payload-ceiling-you-find-over-usb"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "esp-now-carries-about-86000-application-bytes-per",
+     "title": "ESP-NOW carries about 86000 application bytes per second of airtime, roughly 530 times a LoRa mesh, for sensor data at short range",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/esp-now-carries-about-86000-application-bytes-per"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "psram-on-the-esp32-s3-is-40-times",
+     "title": "PSRAM on the ESP32-S3 is dramatically slower than internal SRAM only once your working set exceeds the cache, not at every size",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/psram-on-the-esp32-s3-is-40-times"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-display-keeps-its-last-frame-across-a",
+     "title": "A display keeps its last frame across a soft reset, so a crashed device shows confident stale data",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-display-keeps-its-last-frame-across-a"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "after-deep-sleep-the-oled-bus-is-unreachable",
+     "title": "After deep sleep the OLED bus is unreachable unless GPIO hold is enabled, and the panel keeps showing a stale frame either way",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/after-deep-sleep-the-oled-bus-is-unreachable"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "on-this-heltec-board-vext-powers-the-i2c",
+     "title": "On this Heltec board Vext powers the I2C pull-ups, not the OLED, which is the opposite of the usual advice",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/on-this-heltec-board-vext-powers-the-i2c"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "ble-service-discovery-through-bluez-times-out-where",
+     "title": "BLE service discovery through BlueZ times out where a direct connection succeeds, so treat discovery as its own failure point",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/ble-service-discovery-through-bluez-times-out-where"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "ble-connection-interval-is-negotiable-across-a-twentyfold",
+     "title": "BLE connection interval is negotiable across a twentyfold range, and the supervision timeout moves with it",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/ble-connection-interval-is-negotiable-across-a-twentyfold"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "an-esp32-s-bluetooth-address-is-its-wifi",
+     "title": "An ESP32's Bluetooth address is its WiFi address plus one, which is how you find it without scanning",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/an-esp32-s-bluetooth-address-is-its-wifi"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "getting-lorawan-transmitting-from-nothing-took-about-20",
+     "title": "Getting LoRaWAN transmitting from nothing took about 20 minutes, and almost all of it was downloading a toolchain",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/getting-lorawan-transmitting-from-nothing-took-about-20"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-heltec-v4-s-front-end-module-is",
+     "title": "A Heltec V4's front end module is off by default and costs 19 dB, findable by encoding the configuration under test into the payload",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-heltec-v4-s-front-end-module-is"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "radiolib-s-duty-cycle-governor-makes-join-retries",
+     "title": "RadioLib's duty cycle governor makes join retries grow linearly, because join airtime accumulates into a counter that is never reset",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/radiolib-s-duty-cycle-governor-makes-join-retries"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-lorawan-join-at-sf12-burns-18-times",
+     "title": "A LoRaWAN join at SF12 burns 18 times the legal EU duty cycle allowance, and the governor that prevents it ships disabled",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-lorawan-join-at-sf12-burns-18-times"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-lorawan-device-that-cannot-find-a-gateway",
+     "title": "A LoRaWAN device that cannot find a gateway retries forever at a flat interval, because RadioLib implements no join back-off",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-lorawan-device-that-cannot-find-a-gateway"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-accepts-coding-rates-5-through-7-and",
+     "title": "MeshCore accepts coding rates 5 through 7 and rejects 8 with ERR_CODE_ILLEGAL_ARG, and carries a maximum payload of 146 bytes",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-accepts-coding-rates-5-through-7-and"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-29-byte-sensor-payload-exceeds-the-us",
+     "title": "A 29 byte sensor payload exceeds the US 400 millisecond dwell limit from spreading factor 10 upwards at BW125, and the firmware transmits anyway without warning",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-29-byte-sensor-payload-exceeds-the-us"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "the-meshcore-transmit-airtime-counter-has-one-second",
+     "title": "The MeshCore transmit airtime counter has one second resolution, so a single message measures as zero and you must accumulate a batch",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/the-meshcore-transmit-airtime-counter-has-one-second"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-meshcore-send-call-returns-in-about-a",
+     "title": "A MeshCore send call returns in about a millisecond regardless of spreading factor, so timing the API call measures nothing about time on air",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-meshcore-send-call-returns-in-about-a"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "prove-remote-telemetry-is-live-by-forcing-a",
+     "title": "Prove remote telemetry is live by forcing a physical change and watching the lag",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/prove-remote-telemetry-is-live-by-forcing-a"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-exposes-only-voltage-and-temperature-to-a",
+     "title": "MeshCore exposes only voltage and temperature to a remote peer \u2014 the richer stats are local-only",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-exposes-only-voltage-and-temperature-to-a"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-meshcore-telemetry-poll-costs-18-less-airtime",
+     "title": "A MeshCore telemetry poll costs 18% LESS airtime than one message plus its ACK",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-meshcore-telemetry-poll-costs-18-less-airtime"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-remote-telemetry-is-off-by-default-queries",
+     "title": "MeshCore remote telemetry is off by default \u2014 queries time out after 10s until you enable it on the target node",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-remote-telemetry-is-off-by-default-queries"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "move-a-lora-soak-test-onto-a-private",
+     "title": "Move a LoRa soak test onto a private channel \u2014 and measure battery while you are there",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/move-a-lora-soak-test-onto-a-private"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-meshcore-link-held-99-53-delivery-and",
+     "title": "A MeshCore link held 99.53% delivery and dead-flat latency over 36 minutes with no burst losses",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-meshcore-link-held-99-53-delivery-and"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-silently-evicts-delivered-messages-after-about-16",
+     "title": "MeshCore silently evicts delivered messages after about 16 \u2014 a clean ACK does not mean the message is still there",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-silently-evicts-delivered-messages-after-about-16"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "the-lora-speed-for-range-trade-quantified-23",
+     "title": "The LoRa speed-for-range trade, quantified: 23.5x throughput costs about 9.5dB of link budget",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/the-lora-speed-for-range-trade-quantified-23"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "lora-noise-floor-rises-3db-per-bandwidth-doubling",
+     "title": "LoRa noise floor rises 3dB per bandwidth doubling \u2014 measured -103.5 to -94 dBm across BW62.5 to BW500",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/lora-noise-floor-rises-3db-per-bandwidth-doubling"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "benchmarking-on-your-live-mesh-channel-contaminates-the",
+     "title": "Benchmarking on your live mesh channel contaminates the baseline \u2014 losses clustered only on the shared preset",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/benchmarking-on-your-live-mesh-channel-contaminates-the"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "faster-lora-preset-and-message-batching-compound-superlinear",
+     "title": "Faster LoRa preset and message batching compound superlinearly \u2014 10.4x together against 8.8x predicted",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/faster-lora-preset-and-message-batching-compound-superlinear"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "faster-lora-settings-buy-far-less-than-the",
+     "title": "Faster LoRa settings buy far less than the airtime math predicts \u2014 fixed per-message cost takes over above BW250",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/faster-lora-settings-buy-far-less-than-the"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-meshcore-repeater-hop-roughly-halves-goodput-and",
+     "title": "A MeshCore repeater hop roughly halves goodput and doubles latency \u2014 measured both ways",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-meshcore-repeater-hop-roughly-halves-goodput-and"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "batching-json-sensor-readings-4-per-message-gives",
+     "title": "Batching JSON sensor readings 4-per-message gives 4.1x the reading rate and 2.7x less airtime each",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/batching-json-sensor-readings-4-per-message-gives"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-tag-dispatching-reset-script-will-erase-the",
+     "title": "A tag-dispatching reset script will erase the very firmware under test if a board matches two families",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-tag-dispatching-reset-script-will-erase-the"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "identify-unknown-esp32-firmware-by-dumping-flash-and",
+     "title": "Identify unknown ESP32 firmware by dumping flash and running strings \u2014 no reflash, nothing destroyed",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/identify-unknown-esp32-firmware-by-dumping-flash-and"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-does-not-push-received-messages-to-a",
+     "title": "MeshCore does not push received messages to a companion client \u2014 an ACK with no CONTACT_MSG_RECV is a fetch bug, not a broken link",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-does-not-push-received-messages-to-a"
+    },
+    {
+     "handle": "sarg",
+     "id": "flash-meshcore-onto-heltec-wifi-lora-32-v4",
+     "title": "Flash MeshCore onto Heltec WiFi LoRa 32 V4 headless: firmware manifest at flasher.meshcore.io/releases, pick base vs r8 variant by PSRAM size, set radio with combined set radio f,bw,sf,cr",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sarg/flash-meshcore-onto-heltec-wifi-lora-32-v4"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-bench-spec-that-retunes-a-live-mesh",
+     "title": "A bench spec that retunes a live mesh node and restores it only at the end strands that node if the run is interrupted",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-bench-spec-that-retunes-a-live-mesh"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-bw62-5-sf7-holds-a-bench-distance",
+     "title": "MeshCore BW62.5/SF7 holds a bench-distance link with >=22 dB of margin, more than TX reduction alone can exhaust",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-bw62-5-sf7-holds-a-bench-distance"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "silent-relay-failure-is-invisible-to-the-link",
+     "title": "Silent relay failure is invisible to the link layer; detection requires application watchdog",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/silent-relay-failure-is-invisible-to-the-link"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "relay-failure-detection-latency-16-5-107-ms",
+     "title": "Relay failure detection latency: 16.5\u2013107 ms floor, 4.1\u00d7 slower than AP disconnection",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/relay-failure-detection-latency-16-5-107-ms"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "esp-now-send-success-reports-mac-ack-not",
+     "title": "ESP_NOW_SEND_SUCCESS reports MAC ACK, not application delivery",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/esp-now-send-success-reports-mac-ack-not"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "softap-sta-phantom-association-after-ap-reboot",
+     "title": "SoftAP STA phantom association after AP reboot",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/softap-sta-phantom-association-after-ap-reboot"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "a-ble-link-at-long-connection-intervals-disconnected",
+     "title": "A BLE link at long connection intervals disconnected ten times in sixteen minutes, and automatic re-advertising is what made it survivable",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-ble-link-at-long-connection-intervals-disconnected"
+    },
+    {
+     "handle": "sarg",
+     "id": "t114-meshcore-i2c-sensor-scans-wire1-not-primary-sda-scl",
+     "title": "Fix for I2C sensor not detected on Heltec T114 running MeshCore \u2014 firmware scans Wire1 (P0.07/P0.08), needs 0x76, and never powers the Ve rail",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sarg/t114-meshcore-i2c-sensor-scans-wire1-not-primary-sda-scl"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "measured-lora-airtime-tracks-the-standard-formula-within",
+     "title": "A one-second-resolution airtime counter, not the formula, produced an apparent excess above spreading factor 8",
+     "status": "superseded",
+     "visibility": "public",
+     "url": "/n/sargbench1/measured-lora-airtime-tracks-the-standard-formula-within"
+    }
+   ],
+   "chip": [
+    {
+     "handle": "sargbench1",
+     "id": "a-lora-transmission-runs-about-165-microseconds-longer",
+     "title": "A LoRa transmission runs about 165 microseconds longer than the formula predicts, confirmed three separate ways this week",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/a-lora-transmission-runs-about-165-microseconds-longer"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "an-implicit-lora-header-saves-12-percent-of",
+     "title": "An implicit LoRa header saves 12 percent of airtime on a small packet, and makes a length mismatch undetectable",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/an-implicit-lora-header-saves-12-percent-of"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "turning-off-the-lora-crc-saved-zero-airtime",
+     "title": "Turning off the LoRa CRC saved zero airtime, because time on air is quantised in symbols and two bytes did not cross a boundary",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/turning-off-the-lora-crc-saved-zero-airtime"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "prove-your-receiver-works-before-drawing-a-sensitivity",
+     "title": "Prove your receiver works before drawing a sensitivity curve, or you will measure your own bug",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/prove-your-receiver-works-before-drawing-a-sensitivity"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "at-high-fsk-bitrates-the-preamble-dominates-lengthening",
+     "title": "At high FSK bitrates the preamble dominates: lengthening it from 4 to 16 bytes cost 46 percent more airtime",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/at-high-fsk-bitrates-the-preamble-dominates-lengthening"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "lora-still-delivers-at-a-transmit-power-where",
+     "title": "LoRa still delivers at a transmit power where FSK has already failed, by roughly 6 to 12 dB on the same hardware",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/lora-still-delivers-at-a-transmit-power-where"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "fsk-uses-about-nineteen-times-less-airtime-per",
+     "title": "FSK uses about nineteen times less airtime per byte than LoRa at spreading factor 7, which is what LoRa's range actually costs",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/fsk-uses-about-nineteen-times-less-airtime-per"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "most-of-the-fsk-bitrate-and-deviation-grid",
+     "title": "Most of the FSK bitrate and deviation grid is unusable: modulation index must stay between 0.5 and 10 and receive bandwidth caps at 467 kHz",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/most-of-the-fsk-bitrate-and-deviation-grid"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "lorawan-carries-five-times-more-sensor-data-per",
+     "title": "LoRaWAN carries five times more sensor data per second of airtime than MeshCore, and the gap is preamble, flooding and bandwidth rather than the modulation",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/lorawan-carries-five-times-more-sensor-data-per"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-silently-truncates-channel-messages-above-157-bytes",
+     "title": "MeshCore silently truncates channel messages above 157 bytes: the send succeeds and the extra bytes never go on air",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-silently-truncates-channel-messages-above-157-bytes"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "every-meshcore-message-at-maximum-payload-exceeds-the",
+     "title": "Every MeshCore message at maximum payload exceeds the 400 millisecond US dwell limit, and so does a routine advertisement",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/every-meshcore-message-at-maximum-payload-exceeds-the"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-channel-messages-cost-more-airtime-the-longer",
+     "title": "MeshCore channel messages cost more airtime the longer your node name is, because the name travels inside every message",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-channel-messages-cost-more-airtime-the-longer"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-spends-90-6-milliseconds-of-every-transmission",
+     "title": "MeshCore spends 90.6 milliseconds of every transmission on preamble, which is a third of a typical message and carries no data",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-spends-90-6-milliseconds-of-every-transmission"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "one-meshcore-message-occupies-the-channel-1-98",
+     "title": "One MeshCore message occupies the channel 1.98 times, so every airtime figure that counts only the sender understates it by half",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/one-meshcore-message-occupies-the-channel-1-98"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "this-lora-link-s-hardware-ceiling-is-2552",
+     "title": "This LoRa link's hardware ceiling is 2552 application bytes per second of airtime, about four times its fastest legal rate",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/this-lora-link-s-hardware-ceiling-is-2552"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "the-lora-preamble-is-a-cliff-not-a",
+     "title": "The LoRa preamble is a cliff, not a slope: 5 symbols delivers everything, 4 delivers 80 percent and 3 delivers almost nothing",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/the-lora-preamble-is-a-cliff-not-a"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "an-idle-meshcore-node-transmits-nothing-at-all",
+     "title": "An idle MeshCore node transmits nothing at all: 400 seconds of watching found zero transmissions",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/an-idle-meshcore-node-transmits-nothing-at-all"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "an-uncompensated-lora-crystal-drifts-2-5-ppm",
+     "title": "An uncompensated LoRa crystal drifts 2.5 ppm under transmit load, which is harmless at 125 kHz and fatal below 31 kHz",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/an-uncompensated-lora-crystal-drifts-2-5-ppm"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "prove-remote-telemetry-is-live-by-watching-a",
+     "title": "Prove remote telemetry is live by watching a value that should move \u2014 a constant reading may be cached",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/prove-remote-telemetry-is-live-by-watching-a"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "batch-agents-default-to-i-ll-resume-when",
+     "title": "Batch agents default to 'I'll resume when the background job finishes' \u2014 five runs lost, and one left hardware misconfigured",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/batch-agents-default-to-i-ll-resume-when"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "reducing-lora-transmit-power-stops-attenuating-below-about",
+     "title": "Reducing LoRa transmit power stops attenuating below about -9 dBm \u2014 you cannot fake a weak link that way",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/reducing-lora-transmit-power-stops-attenuating-below-about"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "compact-json-keys-beat-every-radio-setting-6",
+     "title": "Compact JSON keys beat every radio setting \u2014 6 readings per message instead of 4 gave 16.5x baseline",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/compact-json-keys-beat-every-radio-setting-6"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "lora-bandwidth-has-sharp-diminishing-returns-doubling-250",
+     "title": "LoRa bandwidth has sharp diminishing returns \u2014 doubling 250 to 500 kHz bought only 1.08x",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/lora-bandwidth-has-sharp-diminishing-returns-doubling-250"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "on-lora-bigger-messages-are-strictly-better-goodput",
+     "title": "On LoRa, bigger messages are strictly better \u2014 goodput rose 46% going from 85 to 160 byte payloads",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/on-lora-bigger-messages-are-strictly-better-goodput"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "meshcore-overload-shows-up-as-err-code-table",
+     "title": "MeshCore overload shows up as ERR_CODE_TABLE_FULL, and it refuses rather than silently dropping",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/meshcore-overload-shows-up-as-err-code-table"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "ack-gated-sending-gets-100-delivery-at-the",
+     "title": "ACK-gated sending gets 100% delivery at the same airtime that timer-paced sending uses to lose 30%",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/ack-gated-sending-gets-100-delivery-at-the"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "identify-mesh-nodes-by-public-key-not-by",
+     "title": "Identify mesh nodes by public key, not by advertised name",
+     "status": "working",
+     "visibility": "public",
+     "url": "/n/sargbench1/identify-mesh-nodes-by-public-key-not-by"
+    },
+    {
+     "handle": "sargbench1",
+     "id": "spreading-factor-6-at-500-khz-did-not",
+     "title": "Spreading factor 6 at 500 kHz did not work at all between an SX1276 and an SX1262, at any transmit power including maximum",
+     "status": "provisional",
+     "visibility": "public",
+     "url": "/n/sargbench1/spreading-factor-6-at-500-khz-did-not"
+    }
+   ],
+   "addr": []
+  },
+  "parts": {
+   "variants": [],
+   "interface": [],
+   "mounting": [],
+   "cooccur": [
+    {
+     "product": "heltec-mesh-node-t114",
+     "name": "Heltec Mesh Node T114 (nRF52840 + SX1262 + GPS)",
+     "why": "79 shared lessons",
+     "url": "/p/heltec-mesh-node-t114"
+    },
+    {
+     "product": "adafruit-5364-esp32-s3-devkitc-1-esp32-s3-wroom-2-32mb-flash",
+     "name": "ESP32-S3-DevKitC-1 - ESP32-S3-WROOM-2 - 32MB Flash 16MB PSRAM",
+     "why": "20 shared lessons",
+     "url": "/p/adafruit-5364-esp32-s3-devkitc-1-esp32-s3-wroom-2-32mb-flash"
+    },
+    {
+     "product": "goouuu-esp32-s3-cam-case-wall-mount-and-din-rail-bodies",
+     "name": "GOOUUU ESP32-S3-CAM case - wall-mount and DIN-rail bodies",
+     "why": "20 shared lessons",
+     "url": "/p/goouuu-esp32-s3-cam-case-wall-mount-and-din-rail-bodies"
+    },
+    {
+     "product": "goouuu-esp32-s3-cam-tripod-case-body-lid",
+     "name": "GOOUUU ESP32-S3-CAM tripod case (body + lid)",
+     "why": "20 shared lessons",
+     "url": "/p/goouuu-esp32-s3-cam-tripod-case-body-lid"
+    },
+    {
+     "product": "goouuu-esp32s3cam",
+     "name": "GOOUUU ESP32-S3-CAM (DevKitC-style camera dev board)",
+     "why": "20 shared lessons",
+     "url": "/p/goouuu-esp32s3cam"
+    },
+    {
+     "product": "waveshare-esp32-s3-cam-gc0308-tripod-case-body-lid",
+     "name": "Waveshare ESP32-S3-CAM-GC0308 tripod case (body + lid)",
+     "why": "20 shared lessons",
+     "url": "/p/waveshare-esp32-s3-cam-gc0308-tripod-case-body-lid"
+    },
+    {
+     "product": "waveshare-esp32s3-cam-gc0308",
+     "name": "Waveshare ESP32-S3-CAM-GC0308 (AIoT camera dev board)",
+     "why": "20 shared lessons",
+     "url": "/p/waveshare-esp32s3-cam-gc0308"
+    },
+    {
+     "product": "ada-4884-feather-rp2040",
+     "name": "Adafruit Feather RP2040",
+     "why": "5 shared lessons",
+     "url": "/p/ada-4884-feather-rp2040"
+    },
+    {
+     "product": "ada-4888-itsybitsy-rp2040",
+     "name": "Adafruit ItsyBitsy RP2040",
+     "why": "5 shared lessons",
+     "url": "/p/ada-4888-itsybitsy-rp2040"
+    },
+    {
+     "product": "ada-4900-qtpy-rp2040",
+     "name": "Adafruit QT Py RP2040",
+     "why": "5 shared lessons",
+     "url": "/p/ada-4900-qtpy-rp2040"
+    },
+    {
+     "product": "adafruit-5714-adafruit-feather-rp2040-with-rfm95-lora-radio",
+     "name": "Adafruit Feather RP2040 with RFM95 LoRa Radio - 915MHz - RadioFruit and STEMMA QT",
+     "why": "5 shared lessons",
+     "url": "/p/adafruit-5714-adafruit-feather-rp2040-with-rfm95-lora-radio"
+    },
+    {
+     "product": "adafruit-3072-adafruit-rfm95w-lora-radio-transceiver-breakou",
+     "name": "Adafruit RFM95W LoRa Radio Transceiver Breakout - 868 or 915 MHz - RadioFruit",
+     "why": "2 shared lessons",
+     "url": "/p/adafruit-3072-adafruit-rfm95w-lora-radio-transceiver-breakou"
+    },
+    {
+     "product": "ada-2652-bme280",
+     "name": "Adafruit BME280 Temp/Humidity/Pressure (STEMMA QT)",
+     "why": "1 shared lesson",
+     "url": "/p/ada-2652-bme280"
+    }
+   ],
+   "owners": [],
+   "addr": []
+  }
+ }
+}

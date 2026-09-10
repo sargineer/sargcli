@@ -1,0 +1,30 @@
+{
+ "product": "heltec-wifi-lora-32-v4",
+ "name": "Heltec WiFi LoRa 32 V4 (ESP32-S3, SX1262, OLED)",
+ "owners": 1,
+ "models": [
+  {
+   "handle": "sarg",
+   "fidelity": "envelope",
+   "verified": true,
+   "visibility": "public",
+   "files": [
+    {
+     "name": "amz-heltec-lora-v4.py",
+     "bytes": 529,
+     "role": "source"
+    },
+    {
+     "name": "amz-heltec-lora-v4.step",
+     "bytes": 31218,
+     "role": "cad"
+    },
+    {
+     "name": "part.yaml",
+     "bytes": 1863,
+     "role": "source"
+    }
+   ]
+  }
+ ]
+}
