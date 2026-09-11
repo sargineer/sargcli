@@ -80,6 +80,7 @@ fn claude_pretooluse_adapter_reads_stdin_and_blocks() {
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
+    keep_os_env(&mut cmd);
     let mut child = cmd.spawn().unwrap();
     use std::io::Write;
     child.stdin.take().unwrap().write_all(payload.as_bytes()).unwrap();
@@ -102,6 +103,7 @@ fn claude_pretooluse_allows_non_bash_tools() {
         .env("SARG_NO_JOURNAL", "1")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped());
+    keep_os_env(&mut cmd);
     let mut child = cmd.spawn().unwrap();
     use std::io::Write;
     child.stdin.take().unwrap().write_all(payload.as_bytes()).unwrap();
@@ -163,6 +165,15 @@ fn skill_emits_delegating_markdown_with_config_values() {
     assert!(out.contains("name: sarg"), "{out}");
     assert!(out.contains("sarg ask"), "{out}");
     assert!(out.contains("sarg lesson new"), "{out}");
+    #[cfg(windows)]
+    assert!(out.contains("Device Manager"), "Windows USB guidance: {out}");
+    #[cfg(target_os = "linux")]
+    assert!(out.contains("/dev/ttyACM0"), "Linux USB guidance: {out}");
+    #[cfg(all(not(target_os = "linux"), not(windows)))]
+    assert!(out.contains("sarg id [vid:pid]")
+            && !out.contains("/dev/ttyACM0")
+            && !out.contains("Device Manager"),
+            "non-Linux USB guidance: {out}");
     assert!(out.contains("linux, x86_64"), "host tags carried: {out}");
     assert!(out.contains("acme"), "deny carried: {out}");
     assert!(out.contains("Publishing is always the user's"), "{out}");

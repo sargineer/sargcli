@@ -20,6 +20,13 @@ fn body(ctx: &Ctx) -> String {
     } else {
         ctx.cfg.deny_terms.join(", ")
     };
+    let id_help = if cfg!(target_os = "linux") {
+        "sarg id [vid:pid|/dev/ttyACM0]   # what is this board, and what does sarg know about it"
+    } else if cfg!(windows) {
+        "sarg id [vid:pid]             # identify a board; find USB\\VID_xxxx&PID_yyyy in Device Manager first"
+    } else {
+        "sarg id [vid:pid]             # identify a board from its USB vendor and product IDs"
+    };
     format!(
         r#"---
 name: sarg
@@ -40,7 +47,7 @@ Search first when the work is risky or has failed before.
 sarg ask <words>          # parts + lessons in one shot, ranked; the verbatim error first
 sarg show <handle>/<id>   # one lesson in full (unverified figures are fenced)
 sarg part <product>       # facts with their confidence, models, related lessons
-sarg id [vid:pid|/dev/ttyACM0]   # what is this board, and what does sarg know about it
+{id_help}
 sarg preflight <board>... -i "<intent>"   # a live briefing + the gaps; never saved
 sarg cad get <handle>/<product> -o dir    # download STEP / source
 ```
@@ -114,6 +121,7 @@ says `sarg: env <name>` on stderr — those answers are not sargineer.com's.
 "#,
         tags = tags,
         deny = deny,
+        id_help = id_help,
     )
 }
 

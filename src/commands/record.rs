@@ -175,10 +175,20 @@ fn assemble(ctx: &Ctx, args: &NoteArgs, kind: &str, note_fields: &Value) -> Resu
     Ok(note)
 }
 
+#[cfg(windows)]
+fn default_editor() -> &'static str {
+    "notepad.exe"
+}
+
+#[cfg(not(windows))]
+fn default_editor() -> &'static str {
+    "vi"
+}
+
 fn open_editor(template: &str) -> Result<Value> {
     let editor = std::env::var("VISUAL")
         .or_else(|_| std::env::var("EDITOR"))
-        .unwrap_or_else(|_| "vi".into());
+        .unwrap_or_else(|_| default_editor().into());
     let path = std::env::temp_dir().join(format!("sarg-note-{}.toml", std::process::id()));
     fs::write(&path, template)?;
     let status = std::process::Command::new(&editor)
@@ -192,6 +202,23 @@ fn open_editor(template: &str) -> Result<Value> {
     let text = fs::read_to_string(&path)?;
     let _ = fs::remove_file(&path);
     notes::parse_note(&text)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::default_editor;
+
+    #[cfg(windows)]
+    #[test]
+    fn default_editor_is_notepad() {
+        assert_eq!(default_editor(), "notepad.exe");
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn default_editor_is_vi() {
+        assert_eq!(default_editor(), "vi");
+    }
 }
 
 /// Scan a note about to leave the machine; refuse or, when `allow_pii` lets

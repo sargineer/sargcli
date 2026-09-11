@@ -36,7 +36,7 @@ irm https://sargineer.com/install.ps1 | iex
 The PowerShell installer is published with each GitHub release and adds its
 install directory to your user PATH; open a new terminal before running
 `sarg`. Windows currently supports `sarg id xxxx:yyyy`, but USB-bus and COM
-port discovery are Linux-only; use Device Manager's `USB\\VID_xxxx&PID_yyyy`
+port discovery are Linux-only; use Device Manager's `USB\VID_xxxx&PID_yyyy`
 hardware ID with `sarg id`.
 
 With Rust installed, `cargo install --git https://github.com/sargineer/sargcli`

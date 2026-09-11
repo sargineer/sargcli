@@ -18,4 +18,27 @@ jobs:
         with:
           persist-credentials: false
       - name: Test
-        run: cargo test --locked --all-targets
+        run: cargo test --locked --all-targets --no-fail-fast
+      - name: Install cargo-dist
+        shell: pwsh
+        run: |
+          irm https://github.com/axodotdev/cargo-dist/releases/download/v0.32.0/cargo-dist-installer.ps1 | iex
+      - name: Build and smoke-test the packaged delivery
+        shell: pwsh
+        run: |
+          dist build --artifacts=all --target=x86_64-pc-windows-msvc
+          $installer = "target/distrib/sargcli-installer.ps1"
+          $archive = "target/distrib/sargcli-x86_64-pc-windows-msvc.zip"
+          if (-not (Test-Path $installer)) { throw "cargo-dist did not produce $installer" }
+          if (-not (Test-Path $archive)) { throw "cargo-dist did not produce $archive" }
+          # Use the generated installer's documented overrides to fetch the
+          # exact locally-built archive rather than a not-yet-published release.
+          if (-not (Select-String -Path $installer -Pattern 'SARGCLI_DOWNLOAD_URL' -Quiet)) { throw "installer is missing SARGCLI_DOWNLOAD_URL" }
+          $install = Join-Path $env:RUNNER_TEMP "sarg-install"
+          $env:SARGCLI_DOWNLOAD_URL = (New-Object System.Uri((Resolve-Path "target/distrib"))).AbsoluteUri.TrimEnd('/')
+          $env:SARGCLI_INSTALL_DIR = $install
+          $env:SARGCLI_NO_MODIFY_PATH = "1"
+          & $installer
+          $sarg = Join-Path $install "sarg.exe"
+          if (-not (Test-Path $sarg)) { throw "installer did not install $sarg" }
+          & $sarg --version

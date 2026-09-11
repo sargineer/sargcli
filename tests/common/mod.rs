@@ -77,6 +77,7 @@ impl Sandbox {
             // guard can read back its own state without polluting anything.
             .env("COLUMNS", "100")
             .current_dir(dir);
+        keep_os_env(&mut cmd);
         for (k, v) in env {
             cmd.env(k, v);
         }
@@ -113,4 +114,26 @@ pub fn stderr(o: &Output) -> String {
 }
 pub fn code(o: &Output) -> i32 {
     o.status.code().unwrap_or(-1)
+}
+
+/// `env_clear()` on Windows also drops what the OS itself needs in a child:
+/// without `SystemRoot` Winsock cannot open a socket (every request fails
+/// with "Connect error"), and without `TEMP`/`TMP` the temp dir falls back
+/// to an unwritable system folder. Put those back; nothing sarg reads.
+pub fn keep_os_env(cmd: &mut Command) -> &mut Command {
+    #[cfg(windows)]
+    for k in [
+        "SystemRoot",
+        "SystemDrive",
+        "windir",
+        "TEMP",
+        "TMP",
+        "ComSpec",
+        "PATHEXT",
+    ] {
+        if let Some(v) = std::env::var_os(k) {
+            cmd.env(k, v);
+        }
+    }
+    cmd
 }
