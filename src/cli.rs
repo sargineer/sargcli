@@ -80,7 +80,7 @@ pub enum Cmd {
         n: usize,
     },
 
-    /// What is this USB device, and what does sarg know about it? (vid:pid, /dev/ttyACM0, or nothing to scan)
+    /// What is this USB device, and what does sarg know about it? (vid:pid, /dev/ttyACM0 on Linux, or nothing to scan on Linux)
     Id { what: Option<String> },
 
     /// Before starting: what sarg knows about each board and intent, and the gaps

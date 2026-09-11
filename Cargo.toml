@@ -1,6 +1,6 @@
 [package]
 name = "sargcli"
-version = "0.1.0"
+version = "0.1.1"
 repository = "https://github.com/sargineer/sargcli"
 edition = "2021"
 description = "sarg — ask sarg, tell sarg: the command line for sargineer.com"

@@ -1,9 +1,12 @@
 //! `sarg id`: what is this USB device, and what does sarg know about it?
 //! The 09-02 flash went wrong partly because nobody asked what enumerates
-//! as 303a:1001. Reads sysfs (no lsusb, no root), names the chip from a
-//! small table, and asks sarg for lessons that mention the id.
+//! as 303a:1001. On Linux, reads sysfs (no lsusb, no root); everywhere,
+//! names a supplied VID:PID from a small table and asks sarg for matching
+//! lessons.
 
+#[cfg(target_os = "linux")]
 use std::fs;
+#[cfg(target_os = "linux")]
 use std::path::{Path, PathBuf};
 
 use serde_json::json;
@@ -28,12 +31,24 @@ pub struct UsbDevice {
 /// vid[:pid] → (who, what)
 fn known(vid: &str, pid: &str) -> (&'static str, &'static str) {
     match (vid, pid) {
-        ("303a", "1001") => ("Espressif", "USB JTAG/serial debug unit — native USB of an ESP32-S3/C3/C6/H2"),
+        ("303a", "1001") => (
+            "Espressif",
+            "USB JTAG/serial debug unit — native USB of an ESP32-S3/C3/C6/H2",
+        ),
         ("303a", "0002") => ("Espressif", "ESP32-S2 USB bootloader"),
         ("303a", "1002") => ("Espressif", "ESP32-S3 USB bootloader (download mode)"),
-        ("303a", _) => ("Espressif", "ESP32 family native USB (TinyUSB or custom PID)"),
-        ("10c4", "ea60") => ("Silicon Labs", "CP2102/CP2104 USB-UART bridge — common on ESP32 devkits"),
-        ("1a86", "7523") => ("WCH", "CH340 USB-UART bridge — common on clone devkits and camera boards"),
+        ("303a", _) => (
+            "Espressif",
+            "ESP32 family native USB (TinyUSB or custom PID)",
+        ),
+        ("10c4", "ea60") => (
+            "Silicon Labs",
+            "CP2102/CP2104 USB-UART bridge — common on ESP32 devkits",
+        ),
+        ("1a86", "7523") => (
+            "WCH",
+            "CH340 USB-UART bridge — common on clone devkits and camera boards",
+        ),
         ("1a86", "55d4") => ("WCH", "CH9102 USB-UART bridge"),
         ("1a86", _) => ("WCH", "CH34x/CH9xx USB-UART bridge"),
         ("0403", _) => ("FTDI", "FT232/FT2232 USB-UART"),
@@ -42,19 +57,28 @@ fn known(vid: &str, pid: &str) -> (&'static str, &'static str) {
         ("2e8a", "0005") => ("Raspberry Pi", "RP2 running MicroPython (CDC)"),
         ("2e8a", "000c") => ("Raspberry Pi", "Debug Probe"),
         ("2e8a", _) => ("Raspberry Pi", "RP2040/RP2350 device"),
-        ("239a", _) => ("Adafruit", "Adafruit board (CircuitPython/Arduino/UF2 bootloader; PID names the board)"),
+        ("239a", _) => (
+            "Adafruit",
+            "Adafruit board (CircuitPython/Arduino/UF2 bootloader; PID names the board)",
+        ),
         ("0483", "df11") => ("STMicro", "STM32 DFU bootloader"),
         ("0483", _) => ("STMicro", "STM32 USB device (CDC/composite)"),
         ("1915", _) => ("Nordic", "nRF52/nRF53 USB (DFU or CDC)"),
         ("1209", "abd1") => ("OpenMV", "OpenMV Cam (CDC + MSC)"),
         ("1209", _) => ("pid.codes", "open-source hardware (PID names the project)"),
-        ("2207", _) => ("Rockchip", "Rockchip SoC (MaskROM/ADB/RNDIS) — e.g. Luckfox Pico"),
+        ("2207", _) => (
+            "Rockchip",
+            "Rockchip SoC (MaskROM/ADB/RNDIS) — e.g. Luckfox Pico",
+        ),
         ("2341", _) => ("Arduino", "Arduino board"),
         ("1b4f", _) => ("SparkFun", "SparkFun board"),
         ("16c0", "0483") => ("PJRC", "Teensy (serial)"),
         ("0bda", "2838") => ("Realtek", "RTL2832U — RTL-SDR dongle"),
         ("1d50", "60a1") => ("Airspy", "Airspy R2/Mini SDR"),
-        ("0525", _) => ("Netchip/Linux", "USB gadget (RNDIS/ECM/serial) — a Linux board pretending to be a device"),
+        ("0525", _) => (
+            "Netchip/Linux",
+            "USB gadget (RNDIS/ECM/serial) — a Linux board pretending to be a device",
+        ),
         ("1d6b", _) => ("Linux", "root hub"),
         ("05e3", _) => ("Genesys Logic", "USB hub"),
         ("1a40", _) => ("Terminus", "USB hub"),
@@ -64,12 +88,14 @@ fn known(vid: &str, pid: &str) -> (&'static str, &'static str) {
     }
 }
 
+#[cfg(target_os = "linux")]
 fn read(p: &Path, name: &str) -> String {
     fs::read_to_string(p.join(name))
         .map(|s| s.trim().to_string())
         .unwrap_or_default()
 }
 
+#[cfg(target_os = "linux")]
 fn find_ttys(dev: &Path, depth: u8) -> Vec<String> {
     let mut out = Vec::new();
     if depth == 0 {
@@ -97,6 +123,7 @@ fn find_ttys(dev: &Path, depth: u8) -> Vec<String> {
     out
 }
 
+#[cfg(target_os = "linux")]
 fn device_at(p: &Path) -> Option<UsbDevice> {
     let vid = read(p, "idVendor");
     if vid.is_empty() {
@@ -114,6 +141,7 @@ fn device_at(p: &Path) -> Option<UsbDevice> {
 }
 
 /// Every USB device that is not a hub.
+#[cfg(target_os = "linux")]
 pub fn scan() -> Vec<UsbDevice> {
     let mut out = Vec::new();
     if let Ok(rd) = fs::read_dir("/sys/bus/usb/devices") {
@@ -133,7 +161,15 @@ pub fn scan() -> Vec<UsbDevice> {
     out
 }
 
+/// USB discovery currently relies on Linux sysfs. Other platforms can still
+/// look up a VID:PID supplied by the user.
+#[cfg(not(target_os = "linux"))]
+pub fn scan() -> Vec<UsbDevice> {
+    Vec::new()
+}
+
 /// /dev/ttyACM0 → the USB device that owns it.
+#[cfg(target_os = "linux")]
 pub fn from_tty(tty: &str) -> Option<UsbDevice> {
     let name = tty.trim_start_matches("/dev/");
     let mut p: PathBuf = fs::canonicalize(format!("/sys/class/tty/{name}/device")).ok()?;
@@ -146,6 +182,11 @@ pub fn from_tty(tty: &str) -> Option<UsbDevice> {
     None
 }
 
+#[cfg(not(target_os = "linux"))]
+pub fn from_tty(_tty: &str) -> Option<UsbDevice> {
+    None
+}
+
 fn parse_vidpid(sp: &str) -> Option<(String, String)> {
     let (v, p) = sp.split_once(':')?;
     let ok = |x: &str| x.len() == 4 && x.chars().all(|c| c.is_ascii_hexdigit());
@@ -153,6 +194,21 @@ fn parse_vidpid(sp: &str) -> Option<(String, String)> {
 }
 
 pub fn run(ctx: &mut Ctx, what: Option<&str>) -> Result<()> {
+    #[cfg(target_os = "windows")]
+    match what {
+        None => {
+            return Err(SargError::usage(
+                "USB discovery is not implemented on Windows yet; find USB\\VID_xxxx&PID_yyyy in Device Manager, then run `sarg id xxxx:yyyy`",
+            ));
+        }
+        Some(w) if w.to_ascii_lowercase().starts_with("com") => {
+            return Err(SargError::usage(format!(
+                "serial-port lookup for {w} is not implemented on Windows yet; find its USB\\VID_xxxx&PID_yyyy in Device Manager, then run `sarg id xxxx:yyyy`"
+            )));
+        }
+        _ => {}
+    }
+
     let devices: Vec<UsbDevice> = match what {
         None => scan(),
         Some(w) if w.starts_with("/dev/") || w.starts_with("tty") => {
@@ -184,7 +240,12 @@ pub fn run(ctx: &mut Ctx, what: Option<&str>) -> Result<()> {
         }
     };
     if devices.is_empty() {
+        #[cfg(target_os = "linux")]
         println!("no USB devices other than hubs are visible in /sys/bus/usb/devices");
+        #[cfg(not(target_os = "linux"))]
+        println!(
+            "USB discovery is currently supported on Linux only; pass a VID:PID to look it up"
+        );
         return Ok(());
     }
 
@@ -214,7 +275,11 @@ pub fn run(ctx: &mut Ctx, what: Option<&str>) -> Result<()> {
 
         let mut head = vec![render::bold(&format!("{}:{}", d.vid, d.pid))];
         if !d.manufacturer.is_empty() || !d.product.is_empty() {
-            head.push(format!("{} {}", d.manufacturer, d.product).trim().to_string());
+            head.push(
+                format!("{} {}", d.manufacturer, d.product)
+                    .trim()
+                    .to_string(),
+            );
         }
         if !d.tty.is_empty() {
             head.push(render::good(&d.tty.join(" ")));

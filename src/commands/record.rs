@@ -179,8 +179,7 @@ fn open_editor(template: &str) -> Result<Value> {
     let editor = std::env::var("VISUAL")
         .or_else(|_| std::env::var("EDITOR"))
         .unwrap_or_else(|_| "vi".into());
-    let dir = std::env::var("TMPDIR").unwrap_or_else(|_| "/tmp".into());
-    let path = PathBuf::from(dir).join(format!("sarg-note-{}.toml", std::process::id()));
+    let path = std::env::temp_dir().join(format!("sarg-note-{}.toml", std::process::id()));
     fs::write(&path, template)?;
     let status = std::process::Command::new(&editor)
         .arg(&path)

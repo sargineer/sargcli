@@ -71,6 +71,8 @@ impl Sandbox {
             .env_clear()
             .env("PATH", std::env::var("PATH").unwrap_or_default())
             .env("HOME", &self.home)
+            // `directories` uses this on Windows if HOME is unavailable.
+            .env("USERPROFILE", &self.home)
             // journal stays on; each test's HOME is a private temp dir, so the
             // guard can read back its own state without polluting anything.
             .env("COLUMNS", "100")

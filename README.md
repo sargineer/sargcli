@@ -27,6 +27,18 @@ can also fetch directly:
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/sargineer/sargcli/releases/latest/download/sargcli-installer.sh | sh
 ```
 
+Windows 10/11 x64 is available as a native `.exe`. In PowerShell, run:
+
+```powershell
+irm https://sargineer.com/install.ps1 | iex
+```
+
+The PowerShell installer is published with each GitHub release and adds its
+install directory to your user PATH; open a new terminal before running
+`sarg`. Windows currently supports `sarg id xxxx:yyyy`, but USB-bus and COM
+port discovery are Linux-only; use Device Manager's `USB\\VID_xxxx&PID_yyyy`
+hardware ID with `sarg id`.
+
 With Rust installed, `cargo install --git https://github.com/sargineer/sargcli`
 builds from source. Releases are cut by tagging `vX.Y.Z` (the
 [cargo-dist](https://opensource.axo.dev/cargo-dist/) workflow in

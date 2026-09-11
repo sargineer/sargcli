@@ -192,6 +192,21 @@ fn id_names_the_chip_and_finds_lessons() {
     assert_eq!(code(&o), 2);
 }
 
+#[cfg(windows)]
+#[test]
+fn id_on_windows_explains_how_to_find_a_usb_id() {
+    let sb = Sandbox::new();
+
+    let o = sb.sarg(&["id"]);
+    assert_eq!(code(&o), 2, "{}", stderr(&o));
+    assert!(stderr(&o).contains("Device Manager"), "{}", stderr(&o));
+    assert!(stderr(&o).contains("USB\\VID_xxxx&PID_yyyy"), "{}", stderr(&o));
+
+    let o = sb.sarg(&["id", "COM3"]);
+    assert_eq!(code(&o), 2, "{}", stderr(&o));
+    assert!(stderr(&o).contains("serial-port lookup"), "{}", stderr(&o));
+}
+
 #[test]
 fn preflight_reports_each_board_and_the_gaps_and_writes_nothing() {
     let sb = Sandbox::new();

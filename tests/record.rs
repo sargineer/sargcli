@@ -14,6 +14,55 @@ fn with_api(sb: &Sandbox) {
     sb.json_get("/api", API_FIXTURE);
 }
 
+#[cfg(unix)]
+fn write_fake_editor(home: &std::path::Path) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+
+    let editor = home.join("fake-editor.sh");
+    fs::write(
+        &editor,
+        concat!(
+            "#!/bin/sh\n",
+            "cat > \"$1\" <<'NOTE'\n",
+            "kind = \"lesson\"\n",
+            "title = \"esptool write-flash fails at 0x0 on esp32-s3 with error -71\"\n",
+            "symptom = \"error -71\"\n",
+            "cause = \"unpowered hub\"\n",
+            "fix = \"rear port; ask support@vendorx.com.\"\n",
+            "intent = \"flash a heltec v4\"\n",
+            "project = \"meshbase\"\n",
+            "status = \"working\"\n",
+            "NOTE\n",
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&editor, fs::Permissions::from_mode(0o755)).unwrap();
+    editor
+}
+
+#[cfg(windows)]
+fn write_fake_editor(home: &std::path::Path) -> std::path::PathBuf {
+    let editor = home.join("fake-editor.cmd");
+    fs::write(
+        &editor,
+        concat!(
+            "@echo off\r\n",
+            "(\r\n",
+            "echo kind = \"lesson\"\r\n",
+            "echo title = \"esptool write-flash fails at 0x0 on esp32-s3 with error -71\"\r\n",
+            "echo symptom = \"error -71\"\r\n",
+            "echo cause = \"unpowered hub\"\r\n",
+            "echo fix = \"rear port; ask support@vendorx.com.\"\r\n",
+            "echo intent = \"flash a heltec v4\"\r\n",
+            "echo project = \"meshbase\"\r\n",
+            "echo status = \"working\"\r\n",
+            ") > \"%~1\"\r\n",
+        ),
+    )
+    .unwrap();
+    editor
+}
+
 #[test]
 fn lesson_new_validates_scans_and_posts_private() {
     let sb = Sandbox::new();
@@ -327,26 +376,7 @@ fn edit_gates_pii_the_same_way_as_new() {
             .body(r#"{"ok":true}"#);
     });
     // A scripted $EDITOR that replaces the note with one carrying an email.
-    let editor = sb.home.join("fake-editor.sh");
-    fs::write(
-        &editor,
-        concat!(
-            "#!/bin/sh\n",
-            "cat > \"$1\" <<'NOTE'\n",
-            "kind = \"lesson\"\n",
-            "title = \"esptool write-flash fails at 0x0 on esp32-s3 with error -71\"\n",
-            "symptom = \"error -71\"\n",
-            "cause = \"unpowered hub\"\n",
-            "fix = \"rear port; ask support@vendorx.com.\"\n",
-            "intent = \"flash a heltec v4\"\n",
-            "project = \"meshbase\"\n",
-            "status = \"working\"\n",
-            "NOTE\n",
-        ),
-    )
-    .unwrap();
-    use std::os::unix::fs::PermissionsExt;
-    fs::set_permissions(&editor, fs::Permissions::from_mode(0o755)).unwrap();
+    let editor = write_fake_editor(&sb.home);
     let env = [("EDITOR", editor.to_str().unwrap())];
 
     let o = sb.sarg_env(&["--token", "t", "lesson", "edit", "sargbench2/x"], &env);

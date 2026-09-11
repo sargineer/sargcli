@@ -75,6 +75,7 @@ fn claude_pretooluse_adapter_reads_stdin_and_blocks() {
         .env_clear()
         .env("PATH", std::env::var("PATH").unwrap_or_default())
         .env("HOME", &sb.home)
+        .env("USERPROFILE", &sb.home)
         .env("SARG_NO_JOURNAL", "1")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -97,6 +98,7 @@ fn claude_pretooluse_allows_non_bash_tools() {
         .env_clear()
         .env("PATH", std::env::var("PATH").unwrap_or_default())
         .env("HOME", &sb.home)
+        .env("USERPROFILE", &sb.home)
         .env("SARG_NO_JOURNAL", "1")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped());
