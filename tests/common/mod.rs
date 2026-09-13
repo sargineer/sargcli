@@ -91,6 +91,38 @@ impl Sandbox {
         self.sarg_env(&full, &[])
     }
 
+    /// `sarg ask … | head -1`, the way an agent keeps output short: the
+    /// reader goes away mid-write. Returns `head`'s output, not sarg's —
+    /// what matters is what sarg managed to record before it stopped.
+    #[cfg(unix)]
+    pub fn sarg_piped_into_head(&self, args: &[&str], env: &[(&str, &str)]) -> Output {
+        let mut line = format!(
+            "{:?} --url {:?}",
+            env!("CARGO_BIN_EXE_sarg"),
+            self.server.base_url()
+        );
+        for a in args {
+            line.push_str(&format!(" {a:?}"));
+        }
+        // A reader that closes stdin at once, so the first write really does
+        // get EPIPE. `| head -1` only does that if the output outruns the
+        // pipe buffer, which made the test a coin flip.
+        line.push_str(" | sh -c 'exec <&-; sleep 0.3'");
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c")
+            .arg(line)
+            .env_clear()
+            .env("PATH", std::env::var("PATH").unwrap_or_default())
+            .env("HOME", &self.home)
+            .env("USERPROFILE", &self.home)
+            .env("COLUMNS", "100")
+            .current_dir(&self.home);
+        for (k, v) in env {
+            cmd.env(k, v);
+        }
+        cmd.output().expect("run sarg through a pipe")
+    }
+
     pub fn config_path(&self) -> std::path::PathBuf {
         self.home.join(".sargineer/config.toml")
     }
