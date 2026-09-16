@@ -72,6 +72,38 @@ fn ask_names_the_gap_when_nothing_matches() {
 }
 
 #[test]
+fn a_miss_names_the_word_that_emptied_it() {
+    // The server ANDs every term, so one unknown word returns nothing.
+    // Told only "no match", the caller cannot tell which half of its
+    // question was the new part.
+    let sb = Sandbox::new();
+    sb.json_get("/search", r#"{"q":"as5600 encoder","parts":[],"notes":[]}"#);
+    sb.json_get(
+        "/notes",
+        r#"{"count":0,"total":0,"results":[],
+            "gaps":[{"term":"as5600","notes":0},{"term":"encoder","notes":47}]}"#,
+    );
+    let o = sb.sarg_in(&["ask", "as5600", "encoder"]);
+    assert_eq!(code(&o), 0, "{}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.contains("never seen here: as5600"), "{out}");
+    assert!(out.contains("encoder (47 notes)"), "{out}");
+}
+
+#[test]
+fn an_old_server_that_sends_no_gaps_still_renders() {
+    // The field is additive; a server without it must not change how
+    // this reads, or upgrading the CLI first breaks the CLI.
+    let sb = Sandbox::new();
+    sb.json_get("/search", r#"{"q":"zorbtron","parts":[],"notes":[]}"#);
+    sb.json_get("/notes", r#"{"count":0,"total":111,"results":[]}"#);
+    let o = sb.sarg_in(&["ask", "zorbtron"]);
+    assert_eq!(code(&o), 0, "{}", stderr(&o));
+    assert!(stdout(&o).contains("nothing matches all of"), "{}", stdout(&o));
+    assert!(!stdout(&o).contains("never seen here"), "{}", stdout(&o));
+}
+
+#[test]
 fn search_and_list_are_accepted_as_names_for_ask_and_lesson_ls() {
     // Agents reached for both spellings and got `unrecognized
     // subcommand`: `search` three times, `lesson list` three times.

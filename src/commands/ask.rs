@@ -18,6 +18,10 @@ pub struct Merged {
     pub parts: Vec<Value>,
     pub notes: Vec<Value>,
     pub total: u64,
+    /// Per-word note counts, sent only when the search found nothing.
+    /// Every term is ANDed, so one unknown word empties the result and
+    /// this is the only thing that says which word it was.
+    pub gaps: Vec<Value>,
 }
 
 /// The two calls, merged and ranked. Shared with `preflight`. `boost`
@@ -59,6 +63,11 @@ pub fn search(
         .cloned()
         .unwrap_or_default();
     let total = u(&notes, "total");
+    let gaps: Vec<Value> = notes
+        .get("gaps")
+        .and_then(|g| g.as_array())
+        .cloned()
+        .unwrap_or_default();
     let mut hits: Vec<Value> = notes
         .get("results")
         .and_then(|r| r.as_array())
@@ -113,6 +122,7 @@ pub fn search(
         parts,
         notes,
         total,
+        gaps,
     })
 }
 
@@ -144,6 +154,7 @@ pub fn run(ctx: &mut Ctx, args: &AskArgs) -> Result<()> {
         output::json(&json!({
             "query": m.query,
             "total": m.total,
+            "gaps": m.gaps,
             "parts": m.parts,
             "notes": m.notes,
             "signed_in": ctx.client.has_token(),
@@ -207,6 +218,41 @@ pub fn run(ctx: &mut Ctx, args: &AskArgs) -> Result<()> {
                 m.query
             ))
         );
+        // Which word emptied it. Relaxing the query instead was measured
+        // and rejected: dropping the word that matched nothing keeps the
+        // generic leftover, and `micro servo` comes back as fourteen
+        // notes about micropython. The dead word is usually the one that
+        // mattered, so name it and let the caller decide.
+        let mut unknown: Vec<&str> = Vec::new();
+        let mut known: Vec<(u64, &str)> = Vec::new();
+        for g in &m.gaps {
+            let n = u(g, "notes");
+            let t = s(g, "term");
+            if n == 0 {
+                unknown.push(t);
+            } else {
+                known.push((n, t));
+            }
+        }
+        known.sort();
+        if !unknown.is_empty() {
+            println!(
+                "  {}",
+                render::dim(&format!("never seen here: {}", unknown.join(", ")))
+            );
+        }
+        if let Some((n, t)) = known.first() {
+            println!(
+                "  {}",
+                render::dim(&format!(
+                    "narrowest word it does know: {} ({} note{}) — `sarg ask {}`",
+                    t,
+                    n,
+                    if *n == 1 { "" } else { "s" },
+                    t
+                ))
+            );
+        }
         return Ok(());
     }
     println!();
