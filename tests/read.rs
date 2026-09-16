@@ -64,7 +64,23 @@ fn ask_names_the_gap_when_nothing_matches() {
     sb.json_get("/notes", r#"{"count":0,"total":111,"results":[]}"#);
     let o = sb.sarg_in(&["ask", "zorbtron"]);
     assert_eq!(code(&o), 0, "{}", stderr(&o));
-    assert!(stdout(&o).contains("no lessons about \"zorbtron\""), "{}", stdout(&o));
+    assert!(stdout(&o).contains("nothing matches all of \"zorbtron\""), "{}", stdout(&o));
+    // And it must not claim the subject is new. The server ANDs every
+    // term, so zero rows usually means the query was too long — not
+    // that nobody has met this. Saying otherwise invites a duplicate.
+    assert!(!stdout(&o).contains("nobody has paid"), "{}", stdout(&o));
+}
+
+#[test]
+fn search_and_list_are_accepted_as_names_for_ask_and_lesson_ls() {
+    // Agents reached for both spellings and got `unrecognized
+    // subcommand`: `search` three times, `lesson list` three times.
+    let sb = Sandbox::new();
+    sb.json_get("/search", r#"{"q":"zorbtron","parts":[],"notes":[]}"#);
+    sb.json_get("/notes", r#"{"count":0,"total":111,"results":[]}"#);
+    let o = sb.sarg_in(&["search", "zorbtron"]);
+    assert_eq!(code(&o), 0, "{}", stderr(&o));
+    assert!(stdout(&o).contains("zorbtron"), "{}", stdout(&o));
 }
 
 #[test]

@@ -203,7 +203,7 @@ pub fn run(ctx: &mut Ctx, args: &AskArgs) -> Result<()> {
         println!(
             "{}",
             render::warn(&format!(
-                "no lessons about \"{}\" — nobody has paid for this one yet; worth saying so before the evening goes",
+                "nothing matches all of \"{}\" — try fewer words, or the one rarest word on its own. If nobody has hit this, record it when you have the fix: sarg lesson new",
                 m.query
             ))
         );
