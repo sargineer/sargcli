@@ -91,6 +91,34 @@ fn a_miss_names_the_word_that_emptied_it() {
 }
 
 #[test]
+fn a_part_the_query_named_is_answered_from_the_catalogue() {
+    // The text index ANDs every word, so this question finds nothing.
+    // The `is` relation knows which notes are about the LSM6DSOX and
+    // answers in the same call — the retry never has to happen.
+    let sb = Sandbox::new();
+    sb.json_get("/search", r#"{"q":"lsm6dsox 4438 breakout","parts":[],"notes":[]}"#);
+    sb.json_get(
+        "/notes",
+        r#"{"count":0,"total":0,"results":[],
+            "gaps":[{"term":"4438","notes":0},{"term":"breakout","notes":2}],
+            "named":[{"term":"lsm6dsox","product":"lsm6dsox","name":"ST LSM6DSOX",
+              "notes":17,"results":[{"handle":"sargbench1","id":"gravity",
+                "kind":"lesson","status":"working",
+                "title":"An LSM6DSOX reads gravity to within 0.1 percent"}]}]}"#,
+    );
+    let o = sb.sarg_in(&["ask", "lsm6dsox", "4438", "breakout"]);
+    assert_eq!(code(&o), 0, "{}", stderr(&o));
+    let out = stdout(&o);
+    assert!(out.contains("is a part sarg holds"), "{out}");
+    assert!(out.contains("17 lessons"), "{out}");
+    assert!(out.contains("reads gravity"), "{out}");
+    // and it says where the rest are, rather than implying one note
+    assert!(out.contains("sarg part lsm6dsox"), "{out}");
+    // the unknown word is still named
+    assert!(out.contains("never seen here: 4438"), "{out}");
+}
+
+#[test]
 fn an_old_server_that_sends_no_gaps_still_renders() {
     // The field is additive; a server without it must not change how
     // this reads, or upgrading the CLI first breaks the CLI.
