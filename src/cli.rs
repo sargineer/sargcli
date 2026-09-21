@@ -50,6 +50,7 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum Cmd {
     /// Search parts and lessons in one shot, ranked, compact
+    #[command(visible_alias = "search")]
     Ask(AskArgs),
 
     /// One note, every field, unverified figures fenced
@@ -133,6 +134,7 @@ pub enum Cmd {
     Env(EnvArgs),
 
     /// Write a lesson (default), or list/edit/remove/publish your own
+    #[command(visible_alias = "tell")]
     Lesson {
         #[command(subcommand)]
         cmd: LessonCmd,
@@ -209,6 +211,7 @@ pub enum LessonCmd {
     /// Compose and post a lesson (private until you publish it)
     New(NoteArgs),
     /// List your own notes
+    #[command(visible_alias = "list")]
     Ls {
         #[arg(long, value_name = "PRODUCT")]
         hw: Option<String>,
@@ -353,6 +356,11 @@ pub struct PreflightArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum CadCmd {
+    // `sarg cad <product>` with no verb: taken as `cad get <product>`,
+    // which is what it was reached for twice in the transcripts.
+    #[command(external_subcommand)]
+    Slug(Vec<String>),
+
     /// Files of a model, grouped by role
     Ls {
         /// <handle>/<product>, or <product> to see every model of it
@@ -609,7 +617,7 @@ impl Cli {
             Cmd::Preflight(_) => "preflight".into(),
             Cmd::Cad { cmd } => match cmd {
                 CadCmd::Ls { .. } => "cad.ls",
-                CadCmd::Get { .. } => "cad.get",
+                CadCmd::Get { .. } | CadCmd::Slug(_) => "cad.get",
             }
             .into(),
             Cmd::Auth { cmd } => match cmd {

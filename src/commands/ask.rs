@@ -18,6 +18,13 @@ pub struct Merged {
     pub parts: Vec<Value>,
     pub notes: Vec<Value>,
     pub total: u64,
+    /// Per-word note counts, sent only when the search found nothing.
+    /// Every term is ANDed, so one unknown word empties the result and
+    /// this is the only thing that says which word it was.
+    pub gaps: Vec<Value>,
+    /// Parts the query named outright. The `is` relation knows which
+    /// notes are about them, so these are looked up, never ranked.
+    pub named: Vec<Value>,
 }
 
 /// The two calls, merged and ranked. Shared with `preflight`. `boost`
@@ -59,6 +66,16 @@ pub fn search(
         .cloned()
         .unwrap_or_default();
     let total = u(&notes, "total");
+    let gaps: Vec<Value> = notes
+        .get("gaps")
+        .and_then(|g| g.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let named: Vec<Value> = notes
+        .get("named")
+        .and_then(|g| g.as_array())
+        .cloned()
+        .unwrap_or_default();
     let mut hits: Vec<Value> = notes
         .get("results")
         .and_then(|r| r.as_array())
@@ -113,6 +130,8 @@ pub fn search(
         parts,
         notes,
         total,
+        gaps,
+        named,
     })
 }
 
@@ -144,6 +163,8 @@ pub fn run(ctx: &mut Ctx, args: &AskArgs) -> Result<()> {
         output::json(&json!({
             "query": m.query,
             "total": m.total,
+            "gaps": m.gaps,
+            "named": m.named,
             "parts": m.parts,
             "notes": m.notes,
             "signed_in": ctx.client.has_token(),
@@ -203,10 +224,46 @@ pub fn run(ctx: &mut Ctx, args: &AskArgs) -> Result<()> {
         println!(
             "{}",
             render::warn(&format!(
-                "no lessons about \"{}\" — nobody has paid for this one yet; worth saying so before the evening goes",
+                "nothing matches all of \"{}\" — try fewer words, or the one rarest word on its own. If nobody has hit this, record it when you have the fix: sarg lesson new",
                 m.query
             ))
         );
+        // Which word emptied it. Relaxing the query instead was measured
+        // and rejected: dropping the word that matched nothing keeps the
+        // generic leftover, and `micro servo` comes back as fourteen
+        // notes about micropython. The dead word is usually the one that
+        // mattered, so name it and let the caller decide.
+        let mut unknown: Vec<&str> = Vec::new();
+        let mut known: Vec<(u64, &str)> = Vec::new();
+        for g in &m.gaps {
+            let n = u(g, "notes");
+            let t = s(g, "term");
+            if n == 0 {
+                unknown.push(t);
+            } else {
+                known.push((n, t));
+            }
+        }
+        known.sort();
+        if !unknown.is_empty() {
+            println!(
+                "  {}",
+                render::dim(&format!("never seen here: {}", unknown.join(", ")))
+            );
+        }
+        if let Some((n, t)) = known.first() {
+            println!(
+                "  {}",
+                render::dim(&format!(
+                    "narrowest word it does know: {} ({} note{}) — `sarg ask {}`",
+                    t,
+                    n,
+                    if *n == 1 { "" } else { "s" },
+                    t
+                ))
+            );
+        }
+        print_named(&m, true);
         return Ok(());
     }
     println!();
@@ -231,7 +288,64 @@ pub fn run(ctx: &mut Ctx, args: &AskArgs) -> Result<()> {
             ))
         );
     }
+    print_named(&m, false);
     Ok(())
+}
+
+/// Parts the query named by their own id or tag. Looked up through the
+/// `is` relation rather than ranked by text, so these are the notes
+/// that ARE about that part — not the ones that happen to say its name.
+/// In full when the text search came back empty, one line when it did
+/// not, because then the ranked list is already the answer.
+fn print_named(m: &Merged, full: bool) {
+    if m.named.is_empty() {
+        return;
+    }
+    if !full {
+        println!();
+        println!(
+            "  {}",
+            render::dim(&format!(
+                "also named: {}",
+                m.named
+                    .iter()
+                    .map(|p| format!("{} ({})", s(p, "product"), u(p, "notes")))
+                    .collect::<Vec<_>>()
+                    .join(" · ")
+            ))
+        );
+        return;
+    }
+    let empty: Vec<Value> = Vec::new();
+    for p in &m.named {
+        let n = u(p, "notes");
+        let rs = p.get("results").and_then(|x| x.as_array()).unwrap_or(&empty);
+        println!();
+        println!(
+            "{}",
+            render::good(&format!(
+                "{} is a part sarg holds — {} lesson{} about it",
+                s(p, "term"),
+                n,
+                if n == 1 { "" } else { "s" }
+            ))
+        );
+        for (i, v) in rs.iter().take(3).enumerate() {
+            println!(
+                "   {}. {} {} — {}",
+                i + 1,
+                render::status_badge(s(v, "status")),
+                render::note_ref(v),
+                render::truncate(s(v, "title"), 58)
+            );
+        }
+        if (n as usize) > rs.len() {
+            println!(
+                "      {}",
+                render::dim(&format!("`sarg part {}` for all {}", s(p, "product"), n))
+            );
+        }
+    }
 }
 
 fn shell_words(q: &str) -> String {

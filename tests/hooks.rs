@@ -6,7 +6,6 @@ mod common;
 use std::fs;
 
 use common::*;
-use httpmock::prelude::*;
 
 const NOTES_FULL: &str = include_str!("fixtures/notes_full.json");
 
@@ -85,9 +84,15 @@ fn claude_pretooluse_adapter_reads_stdin_and_blocks() {
     use std::io::Write;
     child.stdin.take().unwrap().write_all(payload.as_bytes()).unwrap();
     let out = child.wait_with_output().unwrap();
-    assert_eq!(out.status.code(), Some(2), "block via exit 2");
-    let err = String::from_utf8_lossy(&out.stderr);
-    assert!(err.contains("Before flashing"), "{err}");
+    // A hold is a decision, not a crash: exit 0 with a deny on stdout.
+    assert_eq!(out.status.code(), Some(0), "no hook error");
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let h = &v["hookSpecificOutput"];
+    assert_eq!(h["hookEventName"], "PreToolUse");
+    assert_eq!(h["permissionDecision"], "deny");
+    let reason = h["permissionDecisionReason"].as_str().unwrap();
+    assert!(reason.contains("Before flashing"), "{reason}");
+    assert!(reason.contains("flash-meshcore"), "hits carried: {reason}");
 }
 
 #[test]
@@ -204,4 +209,103 @@ fn stats_summarizes_the_journal() {
     assert_eq!(v["guard_blocks"], 1);
     assert_eq!(v["notes_written"], 1);
     assert_eq!(v["sessions"], 2);
+}
+
+
+#[test]
+fn guard_does_not_hold_a_command_that_only_mentions_a_tool() {
+    let sb = Sandbox::new();
+    // No mock is registered: reaching the server at all would be the bug.
+    for cmd in [
+        vec!["guard", "grep", "-rn", "mpremote", "src"],
+        vec!["guard", "sarg", "ask", "mpremote"],
+        vec!["guard", "west", "--help"],
+    ] {
+        let o = sb.sarg_in(&cmd);
+        assert_eq!(code(&o), 0, "{cmd:?} held: {}", stderr(&o));
+        assert!(
+            stderr(&o).is_empty(),
+            "{cmd:?} said something: {}",
+            stderr(&o)
+        );
+    }
+}
+
+#[test]
+fn guard_allows_when_sarg_knows_nothing_and_says_so_without_holding() {
+    let sb = Sandbox::new();
+    sb.json_get("/notes", r#"{"results":[],"total":0}"#);
+    let env = [("SARG_SESSION", "s-guard-empty")];
+    let o = sb.sarg_env(
+        &["--token", "t", "guard", "esptool", "write-flash", "0x0", "x.bin"],
+        &env,
+    );
+    assert_eq!(code(&o), 0, "nothing to read is nothing to hold for");
+}
+
+#[test]
+fn guard_allows_when_sargineer_cannot_be_reached() {
+    let sb = Sandbox::new();
+    sb.server.mock(|when, then| {
+        when.method(GET).path("/notes");
+        then.status(500).body("boom");
+    });
+    let env = [("SARG_SESSION", "s-guard-down")];
+    let o = sb.sarg_env(
+        &["--token", "t", "guard", "esptool", "write-flash", "0x0", "x.bin"],
+        &env,
+    );
+    assert_eq!(code(&o), 0, "sarg's own trouble must not stop the agent");
+    assert!(
+        !stderr(&o).contains("you are first here"),
+        "must not claim knowledge it does not have: {}",
+        stderr(&o)
+    );
+}
+
+#[test]
+fn the_retry_survives_an_edit_to_the_rest_of_the_line() {
+    let sb = Sandbox::new();
+    sb.json_get("/notes", NOTES_FULL);
+    let env = [("SARG_SESSION", "s-guard-key")];
+    let o = sb.sarg_env(
+        &[
+            "--token", "t", "guard", "esptool", "write-flash", "0x0", "run-1.bin",
+        ],
+        &env,
+    );
+    assert_eq!(code(&o), 2, "first flash is held: {}", stderr(&o));
+    // Same tool, same board, different file: the agent already read them.
+    let o = sb.sarg_env(
+        &[
+            "--token", "t", "guard", "esptool", "write-flash", "0x0", "run-2.bin",
+        ],
+        &env,
+    );
+    assert_eq!(
+        code(&o),
+        0,
+        "a reworded retry must not be held again: {}",
+        stderr(&o)
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn a_search_piped_into_head_still_counts_as_a_search() {
+    let sb = Sandbox::new();
+    sb.json_get("/search", r#"{"parts":[],"notes":[]}"#);
+    sb.json_get("/notes", NOTES_FULL);
+    let env = [("SARG_SESSION", "s-guard-pipe")];
+    sb.sarg_piped_into_head(&["--token", "t", "ask", "heltec"], &env);
+    let o = sb.sarg_env(
+        &["--token", "t", "guard", "esptool", "write-flash", "0x0", "x.bin"],
+        &env,
+    );
+    assert_eq!(
+        code(&o),
+        0,
+        "the search happened; the guard must see it: {}",
+        stderr(&o)
+    );
 }

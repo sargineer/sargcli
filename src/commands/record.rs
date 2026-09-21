@@ -259,9 +259,44 @@ fn new(ctx: &mut Ctx, args: &NoteArgs, kind: &str) -> Result<()> {
         eprintln!("{}", render::warn(&format!("sarg: {w}")));
     }
 
+    // 2b. has anyone already written this? Asked BEFORE the note is
+    // added, because afterwards nobody looks. The corpus holds pairs
+    // like "raw REPL silently drops writes over 4 KB" and "standard
+    // REPL silently truncates scripts over 1 kB" — one lesson, written
+    // twice, weeks apart, because a search for the second never found
+    // the first. Best effort: a network hiccup must never cost a note.
+    let near = near_matches(ctx, &note);
+    if !near.is_empty() && !ctx.json() {
+        eprintln!();
+        eprintln!(
+            "{}",
+            render::warn(&format!(
+                "sarg already holds {} note{} close to this:",
+                near.len(),
+                if near.len() == 1 { "" } else { "s" }
+            ))
+        );
+        for v in &near {
+            eprintln!(
+                "   {} {} — {}",
+                render::status_badge(s(v, "status")),
+                render::note_ref(v),
+                render::truncate(s(v, "title"), 58)
+            );
+        }
+        eprintln!(
+            "{}",
+            render::dim(
+                "   if one of those is this lesson, add to it with \
+                 `sarg lesson edit <ref>` rather than a second copy"
+            )
+        );
+    }
+
     if args.dry_run {
         if ctx.json() {
-            output::json(&json!({"ok": true, "would_send": note, "warnings": warnings}));
+            output::json(&json!({"ok": true, "would_send": note,
+                                 "warnings": warnings, "near": near}));
         } else {
             eprintln!("{}", render::good("dry run: valid and clean, not sent"));
             println!("{}", serde_json::to_string_pretty(&note)?);
@@ -282,6 +317,25 @@ fn new(ctx: &mut Ctx, args: &NoteArgs, kind: &str) -> Result<()> {
         Err(SargError::Offline(_)) => spool(ctx, &note, "offline"),
         Err(e) => Err(e),
     }
+}
+
+/// Notes that share wording with this draft's title — the server's
+/// `near=1`, which ranks by shared words instead of demanding all of
+/// them. A title is long and specific, so bm25 does the discriminating;
+/// the same loose match on a short query would answer with the corpus.
+/// Measured on the near-duplicate pairs already in the corpus, this
+/// finds the earlier note 75% of the time where an exact search finds
+/// it never.
+fn near_matches(ctx: &mut Ctx, note: &Value) -> Vec<Value> {
+    let title = s(note, "title").trim().to_string();
+    if title.is_empty() || ctx.resolved.token.is_none() {
+        return Vec::new();
+    }
+    ctx.client
+        .get_json(&format!("/notes?near=1&n=3&q={}", urlencode(&title)))
+        .ok()
+        .and_then(|v| v.get("results").and_then(|r| r.as_array()).cloned())
+        .unwrap_or_default()
 }
 
 fn report_created(ctx: &Ctx, kind: &str, v: &Value) {

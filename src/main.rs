@@ -21,25 +21,33 @@ use std::time::Instant;
 
 use clap::Parser;
 
-/// Rust starts with SIGPIPE ignored, so `sarg api | head` would panic on
-/// the write after `head` exits. Restore the default: die quietly like curl.
-#[cfg(unix)]
-fn reset_sigpipe() {
-    // SAFETY: setting a signal disposition before any threads exist.
-    unsafe {
-        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
-    }
+/// `sarg ask heltec | head -3` is how an agent keeps output short, and it
+/// used to lose the search: SIGPIPE was restored to its default, so the
+/// process died mid-render and `journal::record` below never ran. The guard
+/// then could not tell that the agent had looked, and held the next flash
+/// anyway — the search-then-blocked-anyway loop.
+///
+/// So leave SIGPIPE ignored (Rust's default) and catch the broken-pipe panic
+/// the write raises instead: journal the call, then exit quietly like curl.
+fn quiet_on_broken_pipe(paths: Option<config::Paths>, verb: String, started: Instant) {
+    let next = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let msg = info.to_string();
+        if msg.contains("Broken pipe") || msg.contains("failed printing to std") {
+            journal::record(paths.as_ref(), &verb, 0, started.elapsed());
+            std::process::exit(0);
+        }
+        next(info);
+    }));
 }
-#[cfg(not(unix))]
-fn reset_sigpipe() {}
 
 fn main() -> ExitCode {
-    reset_sigpipe();
     let cli = cli::Cli::parse();
     let started = Instant::now();
     let verb = cli.verb();
 
     let paths = config::Paths::discover();
+    quiet_on_broken_pipe(paths.as_ref().ok().cloned(), verb.clone(), started);
     let result = match &paths {
         Ok(p) => commands::run(&cli, p.clone()),
         Err(e) => Err(error::SargError::usage(e.to_string())),

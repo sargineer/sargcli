@@ -21,6 +21,10 @@ pub fn guard(ctx: &mut Ctx, command: &[String]) -> Result<i32> {
     let d = core::guard(ctx, &session, &cmd);
     journal::note("blocked", d.block);
     journal::note("guard_cmd", cmd);
+    if !d.tool.is_empty() {
+        journal::note("guard_tool", d.tool.clone());
+        journal::note("guard_key", d.key.clone());
+    }
     if ctx.json() {
         crate::output::json(&json!({
             "block": d.block, "reason": d.reason, "query": d.query,

@@ -103,6 +103,10 @@ pub fn run(ctx: &mut Ctx, cmd: &CadCmd) -> Result<()> {
             files,
             out,
         } => get(ctx, r#ref, role.as_deref(), files, out.clone()),
+        CadCmd::Slug(words) => {
+            let r = words.first().map(String::as_str).unwrap_or_default();
+            get(ctx, r, None, &[], None)
+        }
     }
 }
 

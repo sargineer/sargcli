@@ -5,7 +5,6 @@ mod common;
 use std::fs;
 
 use common::*;
-use httpmock::prelude::*;
 
 const API_FIXTURE: &str = include_str!("fixtures/api.json");
 
@@ -61,6 +60,55 @@ fn write_fake_editor(home: &std::path::Path) -> std::path::PathBuf {
     )
     .unwrap();
     editor
+}
+
+#[test]
+fn lesson_new_shows_what_the_corpus_already_holds() {
+    // One lesson written twice is a search that failed at the only
+    // moment it mattered. The check runs before the POST, and warns
+    // rather than blocks: a gate that can be refused gets routed
+    // around, and some near matches really are different lessons.
+    let sb = Sandbox::new();
+    with_api(&sb);
+    let near = sb.server.mock(|when, then| {
+        when.method(GET).path("/notes").query_param("near", "1");
+        then.status(200)
+            .header("content-type", "application/json")
+            .body(
+                r#"{"count":1,"total":1,"results":[{"handle":"sargbench1",
+                  "id":"openmv-raw-repl-silently-drops-writes",
+                  "kind":"lesson","status":"working",
+                  "title":"OpenMV raw REPL silently drops writes over 4 KB"}]}"#,
+            );
+    });
+    let post = sb.server.mock(|when, then| {
+        when.method(POST).path("/notes");
+        then.status(200)
+            .header("content-type", "application/json")
+            .body(r#"{"id":"openmv-repl-truncates","handle":"sargbench2","visibility":"private"}"#);
+    });
+    let o = sb.sarg_in(&[
+        "lesson",
+        "new",
+        "--title",
+        "OpenMV standard REPL silently truncates scripts over 1 kB",
+        "--symptom",
+        "a script over 1 kB arrives cut short with no error",
+        "--fix",
+        "send in chunks under 1 kB and check the echo",
+        "--intent",
+        "push a script to the board",
+        "--project",
+        "bench",
+    ]);
+    assert_eq!(code(&o), 0, "{}", stderr(&o));
+    near.assert();
+    // it warns...
+    let err = stderr(&o);
+    assert!(err.contains("already holds"), "{err}");
+    assert!(err.contains("raw REPL silently drops writes"), "{err}");
+    // ...and still records the note, because a warning is not a gate.
+    post.assert();
 }
 
 #[test]
