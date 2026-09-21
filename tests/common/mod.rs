@@ -211,6 +211,11 @@ mod fixture {
     struct Request {
         method: String,
         path: String,
+        /// The request-target exactly as it arrived, query string and all.
+        /// Only used to name a request nothing matched: a mismatch on a
+        /// `query_param` value is the case where you most need to see the
+        /// query, and `path` alone has already dropped it.
+        target: String,
         query: Vec<(String, String)>,
         headers: HashMap<String, String>,
         body: Vec<u8>,
@@ -234,6 +239,9 @@ mod fixture {
             self.method = Some(m.to_string());
             self
         }
+        /// Exact, and case-SENSITIVE where httpmock's was not. Every path
+        /// sarg asks for is lowercase, so nothing here relies on the
+        /// difference — but a future mock written in mixed case would.
         pub fn path(&mut self, p: &str) -> &mut Self {
             self.path = Some(p.to_string());
             self
@@ -461,9 +469,15 @@ mod fixture {
             // Wake the blocking accept() so the listener thread notices
             // `stop` and exits instead of leaking; the connection itself is
             // never read.
-            let _ = TcpStream::connect(("127.0.0.1", self.port));
+            let woke = TcpStream::connect(("127.0.0.1", self.port)).is_ok();
             if let Some(h) = self.listener_handle.take() {
-                let _ = h.join();
+                // Only join on a ping that landed. If connect failed the
+                // listener is still parked in accept() and always will be,
+                // so joining would hang the test thread rather than end it;
+                // the thread dies with the process instead.
+                if woke {
+                    let _ = h.join();
+                }
             }
             let conns = std::mem::take(&mut *self.inner.conns.lock().unwrap());
             for h in conns {
@@ -476,7 +490,16 @@ mod fixture {
         // Never let a stuck client (or the shutdown wake-up ping) hang this
         // connection's thread, and by extension the suite; also bounds how
         // long we wait for a *next* request on a kept-alive connection.
-        let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
+        //
+        // Generous on the read side, because that second job has teeth: one
+        // CLI process can pause between two requests on the same pooled
+        // connection — `edit_gates_pii_the_same_way_as_new` runs $EDITOR
+        // between its GET and its PUT. Time out there and we drop a socket
+        // ureq still believes in, and it does not retry a PUT carrying a
+        // body: the test fails as "cannot reach", on a slow runner only.
+        // Waiting longer costs nothing, because Drop never waits on a
+        // connection whose peer has gone — it ends at EOF, not at timeout.
+        let _ = stream.set_read_timeout(Some(Duration::from_secs(60)));
         let _ = stream.set_write_timeout(Some(Duration::from_secs(10)));
         let mut reader = BufReader::new(&stream);
         loop {
@@ -518,7 +541,10 @@ mod fixture {
             let mut hline = String::new();
             let n = reader.read_line(&mut hline).ok()?;
             if n == 0 {
-                break; // EOF mid-headers: treat what we have as the request
+                // EOF mid-headers: the client vanished part-way through
+                // sending, so this is a truncated request and not one worth
+                // matching or counting a hit for.
+                return None;
             }
             let h = hline.trim_end();
             if h.is_empty() {
@@ -542,6 +568,7 @@ mod fixture {
         Some(Request {
             method,
             path,
+            target,
             query,
             headers,
             body,
@@ -627,7 +654,7 @@ mod fixture {
         drop(mocks);
         let msg = format!(
             "fixture server: no mock matched {} {}",
-            req.method, req.path
+            req.method, req.target
         );
         let body = msg.into_bytes();
         let headers = vec![
