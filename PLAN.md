@@ -257,7 +257,8 @@ overflowed a u16 on any number > 65535 in a note ("256000 baud").
 clap (derive) · ureq (rustls, blocking; hooks must start fast) ·
 serde/serde_json/serde_yaml · toml · directories · anyhow · anstyle ·
 dialoguer · open. Tests: validator against a checked-in `/api` fixture,
-verbs against `httpmock`, hook entry points against recorded hook JSON.
+verbs against the std fixture server in `tests/common` (§8c; was
+`httpmock` until 2026-09-21), hook entry points against recorded hook JSON.
 No network in `cargo test`. First real build pulls crates → run in
 `claude-box ~/code/sargcli` unless told otherwise.
 
@@ -270,6 +271,81 @@ so hooks follow; `--env NAME` for one call; stderr banner on every non-prod
 call; doctor flags it. Built for the local sargineer-web dev instance
 (`sargineer-dev.service`).
 
+## 8c. The language question, and what it actually costs (2026-09-21)
+
+Asked directly: should this be another language? Answered: **no, it stays
+Rust** — and the reasons are worth writing down, because the question will
+be asked again by whoever next waits eight minutes for a release build.
+
+Two things make a static binary the right artifact, and neither is about
+Rust being fast at computing anything. The hook runs on *every* Bash
+PreToolUse (`~/.claude/settings.json`), synchronously, in the agent loop:
+measured cold, `sarg --version` is ~0.00s wall and ~3.9 MB RSS. A Python
+or Node `sarg` pays 40-100 ms of interpreter start per tool call, hundreds
+of times a session — that alone settles it. And the install line is the
+product: `install.sh` / `install.ps1` put a working `sarg` on a machine
+nobody here controls, and the lock resolves TLS to rustls+ring rather than
+native-tls, so there is no system OpenSSL to have. A runtime dependency
+would be re-introducing the problem the installer exists to remove.
+
+Go is the only alternative that keeps both properties, and on a greenfield
+day it would be close. It is not greenfield: v0.1.1 is released and
+installed, Windows is validated in CI, and ~4.6k lines of tests encode
+things somebody already lived through (the SIGPIPE hook in `main.rs` is a
+bug, not a style).
+
+What the code says about the fit: **0 `unsafe`, 4 lifetime annotations, 6
+generic fns, 2 hits for Arc/Mutex/async, 114 `.clone()` calls.** This is
+scripting-style Rust that clones past the borrow checker. Little of Rust's
+distinctive power is being used — and little of its tax is being paid.
+Nobody is fighting this compiler.
+
+**The cost is the test harness, not the language.** Splitting the lockfile
+closure: 238 packages, 146 in the runtime closure, and **92 (39%) exist
+only for `dev-dependencies`**. `httpmock` drags in `async-std`, a whole
+async executor stack, and `lalrpop` — a parser generator, compiled from
+source on every clean build — all for a harness whose job is to serve
+canned JSON on localhost and assert what the CLI prints.
+
+*Measured, once it was done, because the first version of this paragraph
+guessed and guessed high.* Clean `cargo clean && cargo test` in the box,
+32 cores, cargo cache warm:
+
+  with httpmock    203 crates · 8.4 s wall · 83 s CPU · target 1.5 GB
+  without          108 crates · 6.6 s wall · 37 s CPU · target 750 MB
+
+So the honest gain is half the CPU, half the disk, and a hundred fewer
+packages to trust — not the minutes this section originally implied. Local
+builds on this machine were never slow; 32 cores hide a lot. The 9.7 GB
+`target/` was accumulated cruft across debug, release, the Windows cross
+target and `distrib`, not one build's footprint, and the 4-8 minute CI runs
+are release builds cross-compiling several targets and uploading, which
+this change barely touches. Worth doing for the smaller trusted surface and
+the halved CPU; not worth claiming it fixed a build-time problem.
+
+*The work (DONE 2026-09-21, branch `test/drop-httpmock`):* `httpmock`
+replaced by a fixture server over `std::net::TcpListener` in
+`tests/common/mod.rs` — binds :0, accept-loop thread plus a thread per
+connection, answers from a route table, joins on drop. Lock 250 -> 150
+packages; 94 tests before and after, same outcomes. Supersedes the
+`httpmock` line in §8.
+
+Two traps found in the building, both worth knowing before anyone writes
+another fixture server here: closing a connection with unread bytes in
+flight gives the peer an RST, and ureq *silently retries* — which
+intermittently doubles a mock's hit count while the CLI notices nothing.
+And never closing, with one accept-loop thread, head-of-line blocks the
+next test behind the connection `sarg_piped_into_head` deliberately
+abandons. The read timeout is 60 s and must stay generous: it also bounds
+the wait between two requests on one pooled connection, and
+`edit_gates_pii_the_same_way_as_new` runs $EDITOR in that gap — time out
+there and ureq will not retry the PUT that follows.
+
+*Watch item:* `serde_yaml` is pinned at `0.9.34+deprecated` and upstream is
+archived. Two files use it (`manifest.rs`, `stock.rs`). `serde_yml` or
+`saphyr` is the move when it bites; not urgent, but it will not un-archive
+itself.
+
 ## 9. Decisions taken (change if you disagree)
 
 - Binary `sarg`; verbs read as asking sarg to do things.
@@ -280,6 +356,8 @@ call; doctor flags it. Built for the local sargineer-web dev instance
 - Flags/YAML-in-editor first; no TUI. `--json` everywhere.
 - Token lives in `~/.sargineer/config.toml` (or `--token`), never the
   environment and never an agent's settings file.
+- Rust, and it stays Rust: the PreToolUse hook is on the agent's
+  critical path and the installer must not assume a runtime (§8c).
 
 ## 9. Roadmap rev 3 (2026-09-09) — build fast, reuse what is known to work
 
@@ -326,7 +404,79 @@ server asks: recipe kind or status, verify endpoint, starter role.
 session journal + shell history through gpurouter locally, user confirms.
 A successful flash after a preflight is already a recipe in the journal.
 
-Order: A, then B, then C, then D. A and B are CLI-only. **A DONE 2026-09-09**
+**E — versions, captured at the moment of use.** Only 23% of notes name
+a version (174 of 747). `sw` is already documented as `tag@version`
+(`cli.rs:285`) and the skill already prints `--sw tool@ver`
+(`skill.rs:85`) — nothing enforces it and nothing supplies it, so
+`assemble()` splits on commas and writes whatever it was handed
+(`record.rs:83-94`). A lesson that cannot say which version it was seen
+on cannot answer "does this still apply", which is what freshness (C)
+and the vendor board both rest on.
+
+*Format.* `pkg@version`, split on the **last** `@`, so a scoped npm name
+(`@tscircuit/cli@0.1.1974`) parses unchanged. Warn on an unparseable
+version; never rewrite it.
+
+*Capture at the event, not at the write.* Two things make write-time
+probing wrong, both observed: `idf.py` is absent and `IDF_PATH` unset on
+this workstation while `esp-idf` has 95 uses in the corpus — that work
+happened on another machine; and `/dev/ttyACM0` is right now held by
+another process, so a board probe at lesson time would fail or fight for
+the port. The hook already knows the tool at the moment it runs —
+`flash_tool()` returns it and `claude.rs:76-85` journals it as
+`guard_tool`. Probe the version *there* and journal it beside the tool.
+`journal::note()` already takes arbitrary keys, so this is a field, not
+an architecture.
+
+*The registry already exists.* `FLASH_TOOLS` (`core.rs:16-35`) is 18
+tools; each gets a probe. Verified on this host: `esptool version` →
+`esptool v5.3.1` then `5.3.1` (two lines — take the last), `mpremote
+--version` → `mpremote 1.28.0`, `arduino-cli version` → `... Version:
+1.5.1 Commit: ...` (regex), `kicad-cli version` → bare `10.0.6` (binary
+is `kicad-cli`, package is `kicad` — the table carries the alias).
+`esptool.py` is deprecated and prints a warning, so try `esptool` first.
+
+*The mpremote trap, which the corpus already fell into.* `mpremote
+--version` is the **host tool**, not the MicroPython on the board. The
+corpus carries `micropython@1.28.0` 17 times, which is exactly mpremote's
+version — almost certainly this conflation. So `mpremote` is its own
+package, and `micropython@X` may only come from the device
+(`sys.implementation`). Each probe declares its source and the CLI prints
+it, so a wrong attribution is visible rather than silent.
+
+*Serial safety.* Before any device probe: resolve through
+`/dev/serial/by-id`, check for a holding process, and skip silently if
+held. Never take a port someone else has.
+
+*One new capability.* There is no run-a-command-and-capture helper today
+— the only `std::process::Command` in the tree is `open_editor`
+(`record.rs:194`), and `sarg id` reads `/sys/bus/usb/devices` directly
+rather than shelling to `lsusb`. So this adds one: argv only (never a
+shell string), binaries restricted to the probe table, ~2s timeout,
+failure is "unknown", never an error.
+
+*Surfaces.*
+  - `sarg versions` — read-only, prints `pkg@ver` with the source of
+    each; `--json`; `--sw` to emit paste-ready flags.
+  - `sarg lesson new` — pre-fills `sw` from this session's journal,
+    printing each with its source so the agent can drop the irrelevant
+    ones. `--no-probe` to skip, matching `sarg init`.
+  - `sarg doctor` — shows the detected toolchain. It already accumulates
+    ok/problem lines and already runs where shelling out is acceptable.
+  - `sarg.yaml` — an optional `toolchain:` block, the versions a project
+    is known to build with. Gives `lesson new` a default and makes drift
+    checkable the way `bom check` checks parts.
+  - `sarg skill` — one rule, stated plainly: write `sw` as `pkg@version`,
+    take it from `sarg versions` or let `lesson new` fill it, and
+    **never invent a version number**. A fabricated version makes a
+    lesson look verified when it is not, which is worse than a bare name.
+
+Server side is small and already specified in sargineer's MATCHING.md §7:
+`sw` needs no new note field — it *is* the observed environment. Parsing
+into `note_sw` with a sortable key, and `fixed_in`, come with the vendor
+responder flow, not here.
+
+Order: A, then B, then C, then D, with E alongside D. A and B are CLI-only. **A DONE 2026-09-09**
 (see phase 4 above). Noted while smoke-testing A live: `openmv-n6` is a hw
 tag with 53 lessons but not a product id (`/p/openmv-n6` → 404), so
 `project show`/`bom check` cannot annotate it — B's capability tags should
