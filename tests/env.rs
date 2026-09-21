@@ -8,11 +8,10 @@ mod common;
 use std::fs;
 
 use common::*;
-use httpmock::prelude::*;
 
 const API_FIXTURE: &str = include_str!("fixtures/api.json");
 
-fn me_mock<'a>(sb: &'a Sandbox, token: &str) -> httpmock::Mock<'a> {
+fn me_mock(sb: &Sandbox, token: &str) -> Mock {
     let auth = format!("Bearer {token}");
     sb.server.mock(move |when, then| {
         when.method(GET).path("/me").header("authorization", &auth);

@@ -5,7 +5,6 @@ mod common;
 use std::fs;
 
 use common::*;
-use httpmock::prelude::*;
 
 const NOTES_FULL: &str = include_str!("fixtures/notes_full.json");
 const SEARCH: &str = include_str!("fixtures/search.json");

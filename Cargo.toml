@@ -23,7 +23,6 @@ toml = { version = "0.8", features = ["preserve_order"] }
 ureq = { version = "2", features = ["json"] }
 
 [dev-dependencies]
-httpmock = "0.7"
 tempfile = "3"
 
 [profile.release]

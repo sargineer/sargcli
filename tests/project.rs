@@ -7,7 +7,6 @@ use std::fs;
 use std::path::PathBuf;
 
 use common::*;
-use httpmock::prelude::*;
 
 const API_FIXTURE: &str = include_str!("fixtures/api.json");
 const NOTES_FULL: &str = include_str!("fixtures/notes_full.json");

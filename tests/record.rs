@@ -5,7 +5,6 @@ mod common;
 use std::fs;
 
 use common::*;
-use httpmock::prelude::*;
 
 const API_FIXTURE: &str = include_str!("fixtures/api.json");
 
